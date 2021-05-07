@@ -7,8 +7,9 @@ function LineSourceParams(x::Vector{T},y::Vector{T};closure=:closed) where {T}
       LineSourceParams(BasicBody(x,y,closuretype=closuretype))
 end
 
-struct PrescribedLineSource{BT<:Body,GT<:ScalarGridData,ST<:ScalarData,RT<:RegularizationMatrix,ET<:InterpolationMatrix}
+struct PrescribedLineSource{BT<:Body,AT,GT<:ScalarGridData,ST<:ScalarData,RT<:RegularizationMatrix,ET<:InterpolationMatrix}
     body :: BT
+    arccoord :: AT
     cache1 :: GT
     q :: ST
     R :: RT
@@ -22,9 +23,12 @@ function PrescribedLineSource(params::LineSourceParams,u::ScalarGridData,g::Phys
 
     s = ScalarData(pts)
 
+    arccoord = ScalarData(pts)
+    arccoord .= accumulate(+,dlengthmid(body))
+
     R = RegularizationMatrix(regop,s,u)
     E = InterpolationMatrix(regop,u,s)
-    PrescribedLineSource(body,similar(u),similar(s),R,E)
+    PrescribedLineSource(body,arccoord,similar(u),similar(s),R,E)
 end
 
 set_linesource_strength!(qline::PrescribedLineSource{BT,GT,ST},q::ST) where {BT,GT,ST} = qline.q .= q

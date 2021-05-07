@@ -13,30 +13,61 @@ function heatconduction_rhs!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys:
   _heatconduction_rhs_forcing!(dT,sys,t)
   _heatconduction_rhs_qflux!(dT,sys)
   _heatconduction_rhs_qmodel!(dT,T,sys)
+  _heatconduction_rhs_qline!(dT,sys)
   return dT
 end
 
-function _heatconduction_rhs_qflux!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY}) where {NX,NY}
+_heatconduction_rhs_qflux!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY}) where {NX,NY} =
+      _heatconduction_rhs_qflux!(dT,sys,sys.qflux)
+
+
+function _heatconduction_rhs_qflux!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},qflux) where {NX,NY}
   @unpack params = sys
   @unpack ρ, c, d = params
   fact = 1.0/(ρ*c)
   fact = isnothing(d) ? fact : fact/d
-  for q in sys.qflux
+  for q in qflux
     dT .+= fact.*q()
   end
   dT
 end
 
-function _heatconduction_rhs_qmodel!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY}) where {NX,NY}
+_heatconduction_rhs_qflux!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},::Nothing) where {NX,NY} = dT
+
+_heatconduction_rhs_qmodel!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY}) where {NX,NY} =
+    _heatconduction_rhs_qmodel!(dT,T,sys,sys.qhdT)
+
+function _heatconduction_rhs_qmodel!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},qhdT) where {NX,NY}
   @unpack params = sys
   @unpack ρ, c, d = params
   fact = 1.0/(ρ*c)
   fact = isnothing(d) ? fact : fact/d
-  for q in sys.qhdT
+  for q in qhdT
     dT .+= fact.*q(T)
   end
   dT
 end
+
+_heatconduction_rhs_qmodel!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},::Nothing) where {NX,NY} = dT
+
+
+_heatconduction_rhs_qline!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY}) where {NX,NY} =
+    _heatconduction_rhs_qline!(dT,sys,sys.qline)
+
+function _heatconduction_rhs_qline!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},qline) where {NX,NY}
+  @unpack qline, params = sys
+  @unpack ρ, c, d = params
+  fact = 1.0/(ρ*c)
+  fact = isnothing(d) ? fact : fact/d
+  for ql in qline
+    ql.cache1 .= ql.R*ql.q
+    dT .-= fact.*ql.cache1
+  end
+  dT
+end
+
+_heatconduction_rhs_qline!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},::Nothing) where {NX,NY} = dT
+
 
 
 _heatconduction_rhs_forcing!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},t) where {NX,NY} = _heatconduction_rhs_forcing!(dT,sys.qforce,cellsize(sys),t)

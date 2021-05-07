@@ -22,55 +22,9 @@ end
 HeatConductionParameters(ρ,c,k,d) = HeatConductionParameters(ρ,c,k,k/(ρ*c),d)
 HeatConductionParameters(ρ,c,k;thickness=nothing) = HeatConductionParameters(ρ,c,k,thickness)
 
-"""
-    PrescribedHeatFluxRegion(q::Real,b::Body)
 
-Set up a prescribed heat flux (per unit area) `q` in a region described by the
-interior of body `b`.
-"""
-struct PrescribedHeatFluxRegion{BT}
-    q :: Float64
-    body :: BT
-end
-
-
-struct PrescribedHeatFlux{GT,MT,BT}
-    q :: GT
-    mask :: MT
-    body :: BT
-    cache :: GT
-end
-
-PrescribedHeatFlux(p::PrescribedHeatFluxRegion,u::GridData,g::PhysicalGrid) =
-            (o = similar(u); fill!(o,1); PrescribedHeatFlux(p.q*o,Mask(p.body,g,u),p.body,o))
-
-(e::PrescribedHeatFlux)() = e.mask(e.cache,e.q)
-
-"""
-    PrescribedHeatModelRegion(hc::Real,Tc::Real,b::Body)
-
-Set up a prescribed heat flux model `hc*(Tc - T)` when acting on data `T` in a region
-described by the interior of body `b`.
-"""
-struct PrescribedHeatModelRegion{BT}
-    hc :: Float64
-    Tc :: Float64
-    body :: BT
-end
-
-struct PrescribedHeatModel{GT,MT,BT}
-    hc :: Float64
-    Tc :: GT
-    mask :: MT
-    body :: BT
-    cache1 :: GT
-    cache2 :: GT
-end
-
-PrescribedHeatModel(p::PrescribedHeatModelRegion,u::GridData,g::PhysicalGrid) =
-            (o = similar(u); fill!(o,1); PrescribedHeatModel(p.hc,p.Tc*o,Mask(p.body,g,u),p.body,o,similar(o)))
-
-(c::PrescribedHeatModel{GT})(T::GT) where {GT} = (c.cache1 .= c.hc.*(c.Tc.-T); c.mask(c.cache2,c.cache1))
+include("operators/heaters.jl")
+include("operators/linesource.jl")
 
 
 """
@@ -119,14 +73,6 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     # Physical Parameters
     "Heat transfer parameters"
     params::HeatConductionParameters
-    #"Density"
-    #ρ::Float64
-    #"Specific heat"
-    #cp::Float64
-    #"Thermal conductivity"
-    #k::Float64
-    #"Thickness"
-    #d::Float64
 
     "Bodies"
     bodies::Union{BodyList,Nothing}
@@ -134,21 +80,19 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     bodytemps::Union{RigidMotionList,Nothing}
     "Volumetric heat inputs"
     qforce::Union{Vector{ModulatedField},Nothing}
-    "Prescribed heat flux regions"
-    qflux::Union{Vector{PrescribedHeatFlux},Nothing}
-    "Prescribed heat model regions"
-    qhdT::Union{Vector{PrescribedHeatModel},Nothing}
 
+    "Prescribed area heat flux"
+    qflux::Union{Vector{PrescribedHeatFlux},Nothing}
+    "Prescribed area h*dT heat model"
+    qhdT::Union{Vector{PrescribedHeatModel},Nothing}
+    "Prescribed line source"
+    qline::Union{Vector{PrescribedLineSource},Nothing}
 
     # Discretization
     "Grid metadata"
     grid::CartesianGrids.PhysicalGrid{2}
     "Time step"
     Δt::Float64
-
-    # Operators
-    #"Laplacian operator"
-    #L::CartesianGrids.Laplacian
 
     # Layers
     dlc::Union{DoubleLayer,Nothing} # used for heat flux surface terms
@@ -157,13 +101,8 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     Tpoints::VectorData{N,Float64}
 
     # Pre-stored regularization and interpolation matrices (if present)
-    #Rf::Union{RegularizationMatrix,Nothing} # faces (edges)
-    #Ef::Union{InterpolationMatrix,Nothing}
-    #Cf::Union{AbstractMatrix,Nothing}
     Rc::Union{RegularizationMatrix,Nothing} # cell centers
     Ec::Union{InterpolationMatrix,Nothing}
-    #Rn::Union{RegularizationMatrix,Nothing} # cell nodes
-    #En::Union{InterpolationMatrix,Nothing}
 
     # Operators
     f :: FT
@@ -171,22 +110,11 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     # state vector
     state_prototype :: SP
 
-    # Scratch space
-
-    ## Pre-allocated space for intermediate values
+    # Cache space
     Sc::Nodes{Primal, NX, NY,Float64}
     Sb::ScalarData{N,Float64}
     ΔTs::ScalarData{N,Float64}
     σ::ScalarData{N,Float64}
-    #Vb::VectorData{N,Float64}
-    #Vf::Edges{Primal, NX, NY, Float64}
-    #Vv::Edges{Primal, NX, NY, Float64}
-    #Vn::Edges{Primal, NX, NY, Float64}
-    #Sn::Nodes{Dual, NX, NY,Float64}
-    #Wn::Nodes{Dual, NX, NY,Float64}
-    #Vtf::EdgeGradient{Primal,Dual,NX,NY,Float64}
-    #DVf::EdgeGradient{Primal,Dual,NX,NY,Float64}
-    #VDVf::EdgeGradient{Primal,Dual,NX,NY,Float64}
 
 end
 
@@ -196,6 +124,7 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
                        qforce::PT = nothing,
                        qflux = nothing,
                        qmodel = nothing,
+                       qline = nothing,
                        static_points = true,
                        problem_side::Type{SD} = InternalProblem,
                        ddftype=CartesianGrids.Yang3) where {PT,SD<:ProblemSide}
@@ -270,6 +199,7 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
                           params, bodies, bodytemps, qforce,
                           _heat_flux_regions(qflux,Sc,g),
                           _heat_model_regions(qmodel,Sc,g),
+                          _line_source(qline,Sc,g),
                           g, Δt, # rk,
                           dlc,
                           points, Rc, Ec,
@@ -480,7 +410,11 @@ function _heat_flux_regions(qparams::Vector{<:PrescribedHeatFluxRegion},u::Scala
   qflux
 end
 
+_heat_flux_regions(qparams::PrescribedHeatFluxRegion,u::ScalarGridData,g::PhysicalGrid) =
+    _heat_flux_regions([qparams],u,g)
+
 _heat_flux_regions(::Nothing,u,g) = nothing
+
 
 function _heat_model_regions(qparams::Vector{<:PrescribedHeatModelRegion},u::ScalarGridData,g::PhysicalGrid)
   qmodel = PrescribedHeatModel[]
@@ -490,12 +424,46 @@ function _heat_model_regions(qparams::Vector{<:PrescribedHeatModelRegion},u::Sca
   qmodel
 end
 
+_heat_model_regions(qparams::PrescribedHeatModelRegion,u::ScalarGridData,g::PhysicalGrid) =
+    _heat_model_regions([qparams],u,g)
+
+
 _heat_model_regions(::Nothing,u,g) = nothing
+
+function _line_source(lineparams::Vector{<:LineSourceParams},u::ScalarGridData,g::PhysicalGrid)
+  qline = PrescribedLineSource[]
+  for p in lineparams
+    push!(qline,PrescribedLineSource(p,u,g))
+  end
+  qline
+end
+
+_line_source(lineparams::LineSourceParams,u::ScalarGridData,g::PhysicalGrid) =
+    _line_source([lineparams],u,g)
+
+_line_source(::Nothing,u,g) = nothing
+
+function set_linesource_strength!(sys::HeatConduction,q::Vector{T}) where {T<:Real}
+    @unpack qline = sys
+    if isnothing(qline)
+      return sys
+    else
+      total_len = mapreduce(ql -> length(ql.q),+,qline)
+      @assert total_len == length(q)
+      qcpy = copy(q)
+      first_index = 0
+      for ql in qline
+        ql.q .= view(q,first_index+1:first_index+length(ql.q))
+        first_index += length(ql.q)
+      end
+    end
+    return sys
+end
 
 
 
 include("operators/surfacetemperatures.jl")
-#include("operators/fields.jl")
+include("operators/fields.jl")
 #include("operators/pointforce.jl")
 include("operators/basicoperators.jl")
 include("operators/surfaceoperators.jl")

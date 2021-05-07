@@ -14,7 +14,11 @@ using LinearAlgebra
 #using SparseArrays
 
 export HeatConduction,setstepsizes,timestep,newstate,
-       ExternalProblem, InternalProblem, ExternalInternalProblem
+       ExternalProblem, InternalProblem, ExternalInternalProblem,
+       temperature,temperature_linesource,
+       HeatConductionParameters,LineSourceParams,
+       PrescribedHeatFluxRegion,PrescribedHeatModelRegion,
+       set_linesource_strength!
 
 #=
 export NavierStokes, PulseParams, PointForce, SpatialDGaussian,
