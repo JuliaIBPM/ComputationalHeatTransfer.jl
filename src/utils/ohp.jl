@@ -92,8 +92,13 @@ end
 # in each element, adjust the spacing so that there is an integral number of points, uniformly spaced
 # along entire shape. Sets the first point at the origin.
 
-# create a set of points in a semicircle of radius `radius` with a nominal spacing `ds`, starting at (0,0)
-# and proceeding counterclockwise about the center (-radius,0)
+#=
+create a set of points in an arc of radius `radius` and turning angle `turnangle`,
+with a nominal spacing `ds` at (0,0) and proceeding counterclockwise about the center
+at (-radius,0). Then the initial point is moved to (x0,y0). If either `flipx` and
+`flipy` are set to true, then it flips the curve about that axis. The curve is
+rotated by angle `angle`.
+=#
 function _turn(radius,turnangle,ds,x0,y0,flipx,flipy,angle)
     np1 = ceil(Int,turnangle*radius/ds)
     θ = range(0.0,turnangle,length=np1)
@@ -111,8 +116,13 @@ _halfturn(radius,ds,x0,y0,flipx,flipy,angle) = _turn(radius,π,ds,x0,y0,flipx,fl
 _quarterturn(radius,ds,x0,y0,flipx,flipy,angle) = _turn(radius,π/2,ds,x0,y0,flipx,flipy,angle)
 
 
-# create a set of points in a straight line of length `length` with nominal spacing `ds`, starting at (0,0)
-# and proceeding in the
+#=
+create a set of points in a straight line of length `length` with nominal spacing `ds`
+at (0,0) and proceeding in the x direction.
+The initial point is moved to (x0,y0). If either `flipx` and `flipy` are set to
+true, then it flips the curve about that axis. The curve is rotated by angle `angle`.
+=#
+
 function _line(length,ds,x0,y0,flipx,flipy,angle)
     np1 = ceil(Int,length/ds)
     s = range(0.0,length,length=np1)
