@@ -2,7 +2,6 @@ using ComputationalHeatTransfer
 using Test
 ##using TestSetExtensions
 using Literate
-using Suppressor
 
 const GROUP = get(ENV, "GROUP", "All")
 
