@@ -1,8 +1,8 @@
-module Thermomodel
+# module Thermomodel
 
 export zhang2002model!,dMdtzhang2002model,dynamicsmodel,dMdtdynamicsmodel,wallmodel,liquidmodel
 
-using ..Systems,..Tools
+# using ..Systems,..Tools
 
 """
     This function is required by "DifferentialEquation.jl" Package.
@@ -338,6 +338,6 @@ function liquidmodel(θarrays,p::PHPSystem)
 end
 
 
-
-
-end
+#
+#
+# end
