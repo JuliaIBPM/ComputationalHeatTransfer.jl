@@ -1,6 +1,7 @@
 # module Systems
 
-export PHPSystem,Tube,Evaporator,Condenser,Liquid,Vapor,Wall,Mapping,PHPResult
+export PHPSystem,Tube,Evaporator,Condenser,Liquid,Vapor,Wall,Mapping
+# ,PHPResult
 
 # using ..Tools
 
@@ -180,28 +181,28 @@ mutable struct PHPSystem
     mapping::Mapping
 end
 
-"""
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω0
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
-"""
-
-struct PHPResult
-    t
-    Xp
-    dXdt
-    P
-    θ
-    M
-end
-
+# """
+# PHPSystem is a struct containing
+#     γ
+#     Hc
+#     He
+#     θc
+#     θe
+#     ω0
+#     ζ
+#     L dimensionless pipe total length
+#     Xc dimensionless condenser range
+#     Xe dimensionless evaporater range
+# """
+#
+# struct PHPResult
+#     t
+#     Xp
+#     dXdt
+#     P
+#     θ
+#     M
+# end
+#
 
 # end

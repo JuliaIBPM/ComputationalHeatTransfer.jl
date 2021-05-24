@@ -7,4 +7,7 @@ module OneDOHP
     includet("intube/Thermomodel.jl")
     includet("intube/Tools.jl")
     includet("intube/Boiling.jl")
+    includet("intube/Merging.jl")
+    includet("intube/TimeMarching.jl")
+    includet("intube/PostProcessing.jl")
 end

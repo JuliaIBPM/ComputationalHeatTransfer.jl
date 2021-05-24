@@ -2,8 +2,50 @@
 #
 # using ..Systems,..Tools
 
-export nucleateboiling
+export boiling_condition,boiling_affect!,nucleateboiling
 
+function boiling_condition(u,t,integrator)
+    return (abs(mod(t,0.01)-0.01) < 1e-6) || mod(t,0.01) < 1e-6
+end
+
+function boiling_affect!(integrator)
+#     println("hahhaha")
+    Δθthreshold = 0.01
+
+    p = deepcopy(getcurrentsys(integrator.u,integrator.p))
+
+    for i = 1:length(p.wall.Xstations)
+
+        if ifamong(p.wall.Xstations[i], p.liquid.Xp)
+            Δθ = getsuperheat(p.wall.Xstations[i],p)
+            if Δθ > Δθthreshold
+
+                # get the insert pressure.
+                wallindex = getoneXarrayindex(p.wall.Xstations[i],p.wall.Xarray)
+                liquidindex = p.mapping.walltoliquid[wallindex]
+                θinsert = p.liquid.θarrays[liquidindex[1]][liquidindex[2]]
+                Pinsert = θinsert.^(γ/(γ-1))
+
+                p = nucleateboiling(p,(p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2),Pinsert) # P need to be given from energy equation
+            end
+        end
+
+
+
+
+    end
+
+    Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
+    M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+
+    unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); wallθtovec(p.wall.θarray); liquidθtovec(p.liquid.θarrays)];
+
+#     set_u!(integrator,  unew)
+    resize!(integrator.u,length(unew))
+    integrator.u = deepcopy(unew)
+
+
+end
 
 function nucleateboiling(sys,Xvapornew,Pinsert)
     ρ = deepcopy(sys.liquid.ρ)
@@ -174,7 +216,6 @@ end
 # end
 
 
-
 function getnewM(M,index,Minsert,closedornot)
 
     Mnew = deepcopy(M)
@@ -184,5 +225,36 @@ function getnewM(M,index,Minsert,closedornot)
     return Mnew
 end
 
-# 
+
+function getsuperheat(Xstation,sys)
+
+    wallindex = getoneXarrayindex(Xstation,sys.wall.Xarray)
+    liquidindex = sys.mapping.walltoliquid[wallindex]
+
+    Δθ = sys.wall.θarray[wallindex] - sys.liquid.θarrays[liquidindex[1]][liquidindex[2]]
+
+    return Δθ
+end
+
+
+```
+    get the index of element of Xarray closest to X.
+    closed loop considered
+```
+function getoneXarrayindex(X,Xarray)
+    for i = 1:length(Xarray)
+        # considering the closed loop B.C.
+        if (Xarray[i] >= Xarray[i+1]) && ((Xarray[i] <= X) || (Xarray[i+1] >= X))
+            return i
+        end
+        if (X >= Xarray[i] && X <= Xarray[i+1])
+            return i
+        end
+    end
+
+    return length(Xarray)
+end
+
+
+#
 # end
