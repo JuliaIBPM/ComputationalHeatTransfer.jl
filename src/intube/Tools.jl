@@ -285,11 +285,10 @@ end
 end
 
 """
-    (open loop only)
     This function is to transform Xp of every interface to form an array of liquid length
         Xp    ::   the locations of all interfaces
 """
-
+ 
 function XptoLliquidslug(Xp::Array{Tuple{Float64,Float64},1},L::Float64)
 
     Lliquidslug = zeros(length(Xp))

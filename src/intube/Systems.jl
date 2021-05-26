@@ -12,7 +12,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -34,7 +34,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -55,7 +55,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -76,7 +76,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -87,8 +87,8 @@ mutable struct Liquid
     γ::Float64
     Hₗ::Float64
     ρ::Float64
-    ω0::Array{Float64,1}
-    ℘::Array{Float64,1}
+    ω::Float64
+    ℘L::Float64
     Xp::Array{Tuple{Float64,Float64},1}
     dXdt::Array{Tuple{Float64,Float64},1}
     Xarrays::Array{Array{Float64,1},1}
@@ -103,7 +103,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -112,7 +112,7 @@ PHPSystem is a struct containing
 
 mutable struct Vapor
     γ::Float64
-    kₗ::Float64
+    k::Float64
     P::Array{Float64,1}
     δ::Array{Float64,1}
 end
@@ -124,7 +124,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -146,7 +146,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -165,7 +165,7 @@ PHPSystem is a struct containing
     He
     θc
     θe
-    ω0
+    ω
     ζ
     L dimensionless pipe total length
     Xc dimensionless condenser range
@@ -189,7 +189,7 @@ end
 #     He
 #     θc
 #     θe
-#     ω0
+#     ω
 #     ζ
 #     L dimensionless pipe total length
 #     Xc dimensionless condenser range

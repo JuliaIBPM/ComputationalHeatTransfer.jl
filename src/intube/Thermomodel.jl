@@ -7,7 +7,6 @@ export dMdtdynamicsmodel,wallmodel,liquidmodel,dynamicsmodel,sys_to_heatflux
 
 function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
-if p.tube.closedornot == false
 
     du = zero(deepcopy(u))
 
@@ -18,9 +17,10 @@ if p.tube.closedornot == false
     sys = deepcopy(p)
 
     γ = sys.liquid.γ
-    ω0 = sys.liquid.ω0
-    ℘ = sys.liquid.℘
+    ω = sys.liquid.ω
+    ℘L = sys.liquid.℘L
     Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
+    Lliquidslug = XptoLliquidslug(Xp,sys.tube.L)
     height = getheight(Xp,sys.tube.L2D,sys.tube.angle)
     Xpvapor = getXpvapor(Xp,sys.tube.L,sys.tube.closedornot)
 
@@ -30,11 +30,13 @@ if p.tube.closedornot == false
     θ = real.((P .+ 0im).^((γ-1)/γ))
 
 
+    if p.tube.closedornot == false
+
     for i = 1:numofliquidslug
         du[2*i-1] = u[2*numofliquidslug+2*i-1]
         du[2*i] = du[2*i-1]
-        du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω0[1]^2)*(0.5*(height[i][end]-height[i][1])) + ℘[1]*(P[i]-P[i+1])
-        # use ℘[1] and ω0[1] for now, in the future change them to one value rather than a array.
+        du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω^2)*(0.5*(height[i][end]-height[i][1])) + (℘L/Lliquidslug[i]) * (P[i]-P[i+1])
+        # use ℘L and ω for now, in the future change them to one value rather than a array.
         du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
 
     end
@@ -44,47 +46,47 @@ if p.tube.closedornot == false
     du[5*numofliquidslug+2:end] .= [0.0]
 
     return du
-end
+    end
 
 if p.tube.closedornot == true
-
-        du = zero(deepcopy(u))
-
-        (Xp,dXdt0,M,δ)=vectoXMδ(u)
-
-
-        numofliquidslug =  Integer( (length(u))/6 )
-        sys = deepcopy(p)
-
-        γ = sys.liquid.γ
-        ω0 = sys.liquid.ω0
-        ℘ = sys.liquid.℘
-        Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
-        height = getheight(Xp,sys.tube.L2D,sys.tube.angle)
-        Xpvapor = getXpvapor(Xp,sys.tube.L,sys.tube.closedornot)
-
-
-
-        P = real.((M./Lvaporplug .+ 0im).^(γ))
-        θ = real.((P .+ 0im).^((γ-1)/γ))
+        #
+        # du = zero(deepcopy(u))
+        #
+        # (Xp,dXdt0,M,δ)=vectoXMδ(u)
+        #
+        #
+        # numofliquidslug =  Integer( (length(u))/6 )
+        # sys = deepcopy(p)
+        #
+        # γ = sys.liquid.γ
+        # ω = sys.liquid.ω
+        # ℘L = sys.liquid.℘L
+        # Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
+        # height = getheight(Xp,sys.tube.L2D,sys.tube.angle)
+        # Xpvapor = getXpvapor(Xp,sys.tube.L,sys.tube.closedornot)
+        #
+        #
+        #
+        # P = real.((M./Lvaporplug .+ 0im).^(γ))
+        # θ = real.((P .+ 0im).^((γ-1)/γ))
 
         for i = 1:numofliquidslug
             du[2*i-1] = u[2*numofliquidslug+2*i-1]
             du[2*i] = du[2*i-1]
 
             if i != numofliquidslug
-                du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω0[1]^2)*(0.5*(height[i][end]-height[i][1])) + ℘[1]*(P[i]-P[i+1])
+                du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω^2)*(0.5*(height[i][end]-height[i][1])) + (℘L/Lliquidslug[i])*(P[i]-P[i+1])
             else
-                du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω0[1]^2)*(0.5*(height[i][end]-height[i][1])) + ℘[1]*(P[i]-P[1])
+                du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω^2)*(0.5*(height[i][end]-height[i][1])) + (℘L/Lliquidslug[i])*(P[i]-P[1])
             end
-            # use ℘[1] and ω0[1] for now, in the future change them to one value rather than a array.
+            # use ℘L and ω for now, in the future change them to one value rather than a array.
             du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
 
         end
 
     # not sure which one is better
         du[4*numofliquidslug+1:5*numofliquidslug] .= dMdtdynamicsmodel(Xpvapor,θ,sys)
-        du[5*numofliquidslug+1:end] .= [0.0]
+        du[5*numofliquidslug+1:end] .= [0.0] # equals to 0 for now
 
         return du
 end
@@ -96,30 +98,22 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},θ::Array{Fl
 
     dMdt=zeros(length(Xpvapor))
 
-    He = sys.evaporator.He
+    # get Hvapor
+    k = sys.vapor.k
+    δ = sys.vapor.δ
+    Hvapor = k ./ δ
 
-    Hc = sys.condenser.Hc
 
-        dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+    dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
 
     for i = 1:length(Xpvapor)
         indexes = findall( x -> (mod(x[1],length(Xpvapor)) == mod(i,length(Xpvapor)) && (x[end] == -1)), sys.mapping.walltoliquid)
 
             for j in length(indexes)
-
-                # print("index",indexes,"\n")
-                # print("θarray",sys.wall.θarray,"\n")
-
-                dMdt[i] += He*dx*(sys.wall.θarray[indexes[j]] - θ[i])
-
+                dMdt[i] += Hvapor[i]*dx*(sys.wall.θarray[indexes[j]] - θ[i])
             end
-
-
     end
-
-
-
     return dMdt
 
 end
@@ -133,7 +127,11 @@ function wallmodel(p::PHPSystem)
 
     γ = sys.vapor.γ
     Hₗ = sys.liquid.Hₗ
-    He = sys.evaporator.He
+    # He = sys.evaporator.He
+    k = sys.vapor.k
+    δ = sys.vapor.δ
+    Hvapor = k ./ δ
+
     dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
     Xarray = sys.wall.Xarray
@@ -168,7 +166,7 @@ function wallmodel(p::PHPSystem)
 
                 θarray_temp_flow[i] = real.((P .+ 0im).^((γ-1)/γ))
 
-                H[i] = He
+                H[i] = Hvapor[index[1]]
             else
                 θliquidarrays = sys.liquid.θarrays
                 θarray_temp_flow[i] = θliquidarrays[index[1]][index[2]]
@@ -185,7 +183,7 @@ end
 function liquidmodel(p::PHPSystem)
     sys = deepcopy(p)
     θarrays = sys.liquid.θarrays
-    
+
     du = zero.(deepcopy(θarrays))
 
     γ = sys.vapor.γ
@@ -278,16 +276,21 @@ function sys_to_heatflux(p::PHPSystem)
     θarray = sys.wall.θarray
     γ = sys.vapor.γ
     Hₗ = sys.liquid.Hₗ
-    He = sys.evaporator.He
-    dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+    # He = sys.evaporator.He
+    k = sys.vapor.k
+    δ = sys.vapor.δ
+    Hvapor = k ./ δ
+
+
+    # dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
     Xarray = sys.wall.Xarray
     Wearray = getwallWearray(Xarray,sys)
 
-    Hwc = sys.condenser.Hwc
-    θc  = sys.condenser.θc
-    Xc  = sys.condenser.Xc
-    hevisidec=ifamong.(Xarray,[Xc])
+    # Hwc = sys.condenser.Hwc
+    # θc  = sys.condenser.θc
+    # Xc  = sys.condenser.Xc
+    # hevisidec=ifamong.(Xarray,[Xc])
 
     Harray = zero(deepcopy(θarray))
     θarray_temp_flow = zero(deepcopy(θarray))
@@ -313,7 +316,7 @@ function sys_to_heatflux(p::PHPSystem)
 
                 θarray_temp_flow[i] = real.((P .+ 0im).^((γ-1)/γ))
 
-                Harray[i] = He
+                Harray[i] = Hvapor[index[1]]
             else
                 θliquidarrays = sys.liquid.θarrays
                 θarray_temp_flow[i] = θliquidarrays[index[1]][index[2]]
@@ -348,8 +351,8 @@ end
 #     sys0 = p
 #
 #     γ = sys0.liquid.γ
-#     ω0 = sys0.liquid.ω0
-#     ℘ = sys0.liquid.℘
+#     ω = sys0.liquid.ω
+#     ℘L = sys0.liquid.℘L
 #     Lvaporplug = XptoLvaporplug(Xp,sys0.tube.L,sys0.tube.closedornot)
 #
 #     height = getheight(Xp,sys0.tube.L2D,sys0.tube.angle)
@@ -378,7 +381,7 @@ end
 #         du[2*i-1] = u[2*numofliquidslug+2*i-1]
 #         du[2*i] = du[2*i-1]
 #
-#         du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω0[i]^2)*(0.5*(height[i][end]-height[i][1])) + ℘[i]*(P[i]-P[i+1])
+#         du[2*numofliquidslug + 2*i-1] = -32*u[2*numofliquidslug + 2*i-1] - (ω[i]^2)*(0.5*(height[i][end]-height[i][1])) + ℘L[i]*(P[i]-P[i+1])
 #         du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
 #
 #     end
