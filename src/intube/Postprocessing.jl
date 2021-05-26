@@ -1,4 +1,4 @@
-export getcurrentsys,modX!
+export getcurrentsys
 
 
 """
@@ -54,6 +54,30 @@ function modX!(Xp,L)
     end
 
     return Xp
+end
+
+"""
+    When having a new Xp because of dynamics, Xarrays need to be updated, too.
+"""
+
+function updateXarrays(Xp,θarrays,L)
+
+    Xarrays = deepcopy(θarrays)
+
+    for i = 1:length(Xarrays)
+        if Xp[i][1] < Xp[i][2]
+            Xarrays[i] = range(Xp[i][1], Xp[i][2], length=length(Xarrays[i]))
+        else
+            Xarrays[i] = range(Xp[i][1], Xp[i][2]+L, length=length(Xarrays[i])) .- L
+            Xarrays[i] = mod.(Xarrays[i], L)
+        end
+    end
+
+    # for i = 1:length(Xp)
+    #     Xarrays[i] = LinRange(Xp[i][1],Xp[i][2],length(θarrays[i]))
+    # end
+
+    return Xarrays
 end
 
 

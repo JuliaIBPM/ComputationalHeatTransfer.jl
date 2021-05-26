@@ -1,6 +1,6 @@
 # module Thermomodel
 
-export dMdtdynamicsmodel,wallmodel,liquidmodel,dynamicsmodel
+export dMdtdynamicsmodel,wallmodel,liquidmodel,dynamicsmodel,sys_to_heatflux
 # zhang2002model!,dMdtzhang2002model,dynamicsmodel
 
 # using ..Systems,..Tools
@@ -125,9 +125,10 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},θ::Array{Fl
 end
 
 
-function wallmodel(θarray::Array{Float64,1},p::PHPSystem)
+function wallmodel(p::PHPSystem)
     sys = deepcopy(p)
 
+    θarray = deepcopy(sys.wall.θarray)
     du = zero(deepcopy(θarray))
 
     γ = sys.vapor.γ
@@ -181,9 +182,10 @@ function wallmodel(θarray::Array{Float64,1},p::PHPSystem)
         return du
 end
 
-function liquidmodel(θarrays,p::PHPSystem)
+function liquidmodel(p::PHPSystem)
     sys = deepcopy(p)
-
+    θarrays = sys.liquid.θarrays
+    
     du = zero.(deepcopy(θarrays))
 
     γ = sys.vapor.γ
@@ -211,7 +213,7 @@ end
 
 
 """
-    Depreciated
+    (Depreciated)
     get the array of evaporator's heat flux along the wall if the 1D tube wall model is used.
 """
 
@@ -231,6 +233,98 @@ function getwallWearray(Xarray,p::PHPSystem)
     return Wearray
 end
 
+
+"""
+    This is a function to get the laplacian of a vector field u
+
+    For now zero-gradient boundary condition is used.
+
+    u    ::  an array
+"""
+
+
+function laplacian(u,periodic=false)
+    unew = deepcopy(u)
+
+    dl = ones(length(u)-1)
+    dr = dl
+    d  = -2*ones(length(u))
+
+    A = Tridiagonal(dl, d, dr)
+
+    unew = A*u
+
+    #periodic B.C.
+    if periodic
+
+        unew[1]   = u[2] - 2*u[1] + u[end]
+
+        unew[end] = u[1] - 2*u[end] + u[end-1]
+
+    else
+
+    # zero gradient B.C.
+    unew[1]   = unew[2]
+    unew[end] = unew[end-1]
+    end
+
+    return (unew)
+end
+
+function sys_to_heatflux(p::PHPSystem)
+
+    sys = deepcopy(p)
+
+    θarray = sys.wall.θarray
+    γ = sys.vapor.γ
+    Hₗ = sys.liquid.Hₗ
+    He = sys.evaporator.He
+    dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+
+    Xarray = sys.wall.Xarray
+    Wearray = getwallWearray(Xarray,sys)
+
+    Hwc = sys.condenser.Hwc
+    θc  = sys.condenser.θc
+    Xc  = sys.condenser.Xc
+    hevisidec=ifamong.(Xarray,[Xc])
+
+    Harray = zero(deepcopy(θarray))
+    θarray_temp_flow = zero(deepcopy(θarray))
+
+        for i = 1:length(θarray)
+
+            index = sys.mapping.walltoliquid[i]
+
+            if index[2] == -1
+
+                if sys.tube.closedornot == false
+                    P = sys.vapor.P[index[1]]
+                end
+
+
+                if sys.tube.closedornot == true
+                    if index[1] > length(sys.vapor.P)
+                        P = sys.vapor.P[index[1]-length(sys.vapor.P)]
+                    else
+                        P = sys.vapor.P[index[1]]
+                    end
+                end
+
+                θarray_temp_flow[i] = real.((P .+ 0im).^((γ-1)/γ))
+
+                Harray[i] = He
+            else
+                θliquidarrays = sys.liquid.θarrays
+                θarray_temp_flow[i] = θliquidarrays[index[1]][index[2]]
+
+                Harray[i] = Hₗ
+            end
+        end
+
+
+    qwallarray = Harray.*(θarray_temp_flow - θarray)
+end
 
 # """
 #     This function is required by "DifferentialEquation.jl" Package.

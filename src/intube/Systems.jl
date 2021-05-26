@@ -42,8 +42,8 @@ PHPSystem is a struct containing
 """
 
 mutable struct Evaporator
-    He::Float64
-    θe::Float64
+    # He::Float64
+    # θe::Float64
     Xe::Array{Tuple{Float64,Float64},1}
     We::Array{Float64,1}
 end
@@ -63,7 +63,7 @@ PHPSystem is a struct containing
 """
 
 mutable struct Condenser
-    Hc::Float64
+    # Hc::Float64
     θc::Float64
     Xc::Array{Tuple{Float64,Float64},1}
     Hwc::Float64
@@ -112,6 +112,7 @@ PHPSystem is a struct containing
 
 mutable struct Vapor
     γ::Float64
+    kₗ::Float64
     P::Array{Float64,1}
     δ::Array{Float64,1}
 end

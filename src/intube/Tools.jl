@@ -1,17 +1,15 @@
 # module Tools
 
-export getheight,
-XMtovec,XMδtovec,vectoXM,vectoXMδ,
-XptoLvaporplug,XptoLliquidslug,getXpvapor,XpvaportoLoverlap,
-ifamongone,ifamong,settemperature!,laplacian,constructXarrays,
-walltoliquidmapping,liquidtowallmapping,truncate,constructmapping,
-duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec,updateXarrays
+export getheight, # get actrual height of the tube
+XMtovec,XMδtovec,vectoXM,vectoXMδ, # transfer Xp,dXdt,M,δ to the state vector
+XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors, length of liquids, and Xp for vapor.
+ifamongone,ifamong,constructXarrays,
+duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec # transfer temperature field to state vector for liquid and wall.
 
 # using ..Systems
 # using LinearAlgebra
 
 """
-    (open loop only)
     This function is a sub-function of getheight. This function is to get the actural physical height for one interface
         X     ::   the location of one interface
         L2D   ::   the length of one bend to another bend (the length in 2D)
@@ -25,7 +23,6 @@ function getoneheight(X::Float64,L2D::Float64,angle::Float64)
 end
 
 """
-    (open loop only)
     This function is to get the actural physical heights for all interfaces
         Xp    ::   the locations of all interfaces
         L2D   ::   the length of one bend to another bend (the length in 2D)
@@ -44,7 +41,6 @@ function getheight(Xp::Array{Tuple{Float64,Float64},1},L2D::Float64,angle::Float
 end
 
 """
-    (open loop only)
     This function is to transform Xp, dXdt of the interface, and M of the vapor to form our state vector u
         Xp    ::   the locations of all interfaces
         dXdt  ::   the 1D velocity of all interfaces
@@ -103,7 +99,6 @@ function XMtovec(Xp::Array{Tuple{Float64,Float64},1},dXdt::Array{Tuple{Float64,F
 end
 
 """
-    (open loop only)
     This function is to transform Xp, dXdt of the interface, and M of the vapor to form our state vector u
         Xp    ::   the locations of all interfaces
         dXdt  ::   the 1D velocity of all interfaces
@@ -117,7 +112,6 @@ function XMδtovec(Xp,dXdt,M,δ)
 end
 
 """
-    (open loop only)
     This function is to transform Xp, dXdt of the interface, and M of the vapor to form our state vector u
         u    ::   the dynamic portion of state vector
 """
@@ -181,7 +175,6 @@ return "error"
 end
 
 """
-    (open loop only)
     This function is to transform Xp, dXdt of the interface, and M of the vapor to form our state vector u
         u    ::   the dynamic portion of state vector
 """
@@ -246,7 +239,6 @@ return "error"
 end
 
 """
-    (open loop only)
     This function is to transform Xp of every interface, and L of the tube to form an array of vapor length
         Xp    ::   the locations of all interfaces
         L     ::   the length of the 1D tube
@@ -314,7 +306,6 @@ function XptoLliquidslug(Xp::Array{Tuple{Float64,Float64},1},L::Float64)
 end
 
 """
-    (open loop only)
     The Xp was coupled by every liquid slug. For instance, if there is one liquid slug. Xp is a one-element tuple (Xp[1][1], Xp[1][2]).
     But sometimes we need Xp to be coupled by every vapor plug. For one liquid slug, we have two vapor plugs.
     So by adding 0 and L at the beginning and the end,
@@ -348,55 +339,6 @@ function getXpvapor(Xp,L,closedornot)
     return Xpvapor
 end
 
-"""
-    (depreciated)
-    This function aims to get the overlapping length between the vapor plug and each evaporator/condenser section and sum them up.
-    It can sum up all evaporator sections or condensor sections respectively, but it cannot sum both of them at the same time.
-    For example:
-
-    XpvaportoLoverlap(Xpvapor,Xe) sums all the overlapping regions for evaporator
-    XpvaportoLoverlap(Xpvapor,Xc) sums all the overlapping regions for condensor
-
-        Xpvapor    ::   the locations of all interfaces, each element means a vapor plug.
-        Xce        ::   the locations of all evaporators/condensors, each element is a evaporators/condensors section
-"""
-
-function XpvaportoLoverlap(Xpvapor,Xce)
-    Loverlap = zeros(length(Xpvapor))
-    for i = 1:length(Xpvapor)
-        for j = 1:length(Xce)
-            if ifoverlap(Xpvapor[i],Xce[j])
-            Loverlap[i] += oneoverlap(Xpvapor[i],Xce[j])
-            end
-        end
-    end
-
-    return Loverlap
-end
-
-"""
-    (depreciated)
-    This is a sub-function of XpvaportoLoverlap to solve the overlapping length between a single vapor section and a single evaporator/condensor section
-
-    oneXpvapor ::  the locations of two ends of a vapor plug
-    oneXce     ::  the locations of two ends of a evaporator/condensor
-"""
-
-function oneoverlap(oneXpvapor,oneXce)
-    return min(oneXpvapor[end],oneXce[end]) - max(oneXpvapor[1],oneXce[1])
-end
-
-"""
-    (depreciated)
-    This is a sub-function to determine if there is a overlapping region between a single vapor section and a single evaporator/condensor section
-
-    oneXpvapor ::  the locations of two ends of a vapor plug
-    oneXce     ::  the locations of two ends of a evaporator/condensor
-"""
-
-function ifoverlap(oneXpvapor,oneXce)
-    return ( (oneXpvapor[end] >= oneXce[1]) || (oneXpvapor[1] <= oneXce[end]) ) && (oneXpvapor[end] > oneXce[1]) && (oneXpvapor[1] < oneXce[end])
-end
 
 """
     This is a general sub-function of ifamong to determine if the value is in the range
@@ -442,64 +384,6 @@ end
 function ifamong(value, X)
 
     return Bool(sum(ifamongone.(value,X)))
-end
-
-"""
-    This is a temporary function to initialize wall temperature field
-
-    θᵣ     ::  one temperature value
-    xvalue ::  one x value
-    sys0   ::  system struct to get Xe and Xc
-"""
-
-
-function settemperature!(θᵣ,xvalue,sys0)
-
-    if ifamong(xvalue, sys0.evaporator.Xe)
-        θᵣ = sys0.evaporator.θe
-
-    elseif ifamong(xvalue, sys0.condenser.Xc)
-        θᵣ = sys0.condenser.θc
-    end
-
-    return θᵣ
-
-end
-
-"""
-    This is a function to get the laplacian of a vector field u
-
-    For now zero-gradient boundary condition is used.
-
-    u    ::  an array
-"""
-
-
-function laplacian(u,periodic=false)
-    unew = deepcopy(u)
-
-    dl = ones(length(u)-1)
-    dr = dl
-    d  = -2*ones(length(u))
-
-    A = Tridiagonal(dl, d, dr)
-
-    unew = A*u
-
-    if periodic
-
-        unew[1]   = u[2] - 2*u[1] + u[end]
-
-        unew[end] = u[1] - 2*u[end] + u[end-1]
-
-    else
-
-    # zero gradient B.C.
-    unew[1]   = unew[2]
-    unew[end] = unew[end-1]
-    end
-
-    return (unew)
 end
 
 """
@@ -554,179 +438,6 @@ function constructXarrays(L::Float64,N,θinitial)
     return(Xwallarray,θwallarray)
 end
 
-"""
-    Create the mapping index of liquid slug corresponding to the wall
-    return Array{Tuple{Float64,Float64},1}
-
-    Xwall   :: Array{Float64,1}
-    Xarrays :: Array{Array{Float64,1},1}
-"""
-
-function walltoliquidmapping(Xwall,Xarrays,closedornot,L)
-
-
-if closedornot == false
-for i = 1:length(Xarrays)
-
-    if Xarrays[i][end] < Xwall
-
-    else
-        for j = 1:length(Xarrays[i])
-            if (j == 1 && Xarrays[i][j] >= Xwall)
-                    return (i,-1)
-                    elseif Xarrays[i][j] >= Xwall && Xarrays[i][j-1] <= Xwall
-                   return (i,j)
-            end
-        end
-    end
-
-end
-
-    return (length(Xarrays)+1,-1) # for closed end tube
-
-end
-
-if closedornot == true
-
-    for i = 1:length(Xarrays)
-
-#         println((Xarrays[i][end] < Xarrays[i][1]) && ifamongone(Xwall,Xarrays[i],L))
-
-
-        # firstly deal with the case in a crossing starting point liquid slug
-        if (Xarrays[i][end] < Xarrays[i][1]) && ifamongone(Xwall,Xarrays[i],L)
-
-
-            if (Xwall <= Xarrays[i][end])
-
-                for index = 1:length(Xarrays[i])-1
-                    j = length(Xarrays[i]) - index + 1
-
-                    if (Xarrays[i][j] <= Xwall) || ((Xarrays[i][j] >= Xwall) && (Xarrays[i][j] <= Xarrays[i][j-1]))
-                        return (i,j)
-                    end
-                end
-
-            end
-
-            if (Xwall >= Xarrays[i][1])
-
-                for j = 1:length(Xarrays[i])-1
-
-                    if (Xarrays[i][j] >= Xwall) || ((Xarrays[i][j] <= Xwall) && (Xarrays[i][j+1] <= Xarrays[i][j]))
-                        return (i,j)
-                    end
-                end
-
-            end
-        end
-
-
-
-        if (Xarrays[i][end] < Xarrays[i][1]) && !ifamongone(Xwall,Xarrays[i],L)
-
-            if ((i > 1) && (Xwall >= Xarrays[i-1][end])) || ((i == 1) && (Xwall >= Xarrays[end][end]))
-                 return (i,-1)
-            end
-
-        end
-
-        # then deal with the normal liquid slug
-        if (Xarrays[i][end] >= Xarrays[i][1]) && ifamongone(Xwall,Xarrays[i])
-
-            for j = 1:length(Xarrays[i])
-
-                if (Xarrays[i][j] >= Xwall)
-                    return (i,j)
-                end
-            end
-        end
-
-
-        # then deal with the normal liquid slug
-        if (Xarrays[i][end] >= Xarrays[i][1]) && !ifamongone(Xwall,Xarrays[i])
-            if ((i > 1) && (Xarrays[i][1] <= Xarrays[i-1][end])) || ((i == 1) && (Xarrays[i][1] <= Xarrays[end][end]))
-                if ((i > 1) && ((Xwall >= Xarrays[i-1][end]) || (Xwall <= Xarrays[i][1])) || ((i == 1) && ((Xwall >= Xarrays[end][end]) || (Xwall <= Xarrays[i][1]))))
-
-                            return (i,-1)
-
-                end
-            end
-
-
-
-            if ((i > 1) && (Xarrays[i][1] >= Xwall) && (Xarrays[i-1][end] <= Xwall)) || ((i == 1) && (Xarrays[i][1] >= Xwall) && (Xarrays[end][end] <= Xwall))
-                    return (i,-1)
-                end
-
-        end
-
-
-    end
-
-    return ("error")
-
-end
-
-end
-
-"""
-    Create the mapping index of liquid slug corresponding to the wall
-    return Array{Tuple{Float64,Float64},1}
-
-    Xwallarray   :: Array{Float64,1}
-    Xliquidone   :: Array{Float64,1}
-"""
-
-function liquidtowallmapping(Xliquidone,Xwallarray)
-
-for i = 2:length(Xwallarray)
-    if Xwallarray[i] >= Xliquidone && Xwallarray[i-1] <= Xliquidone
-        return (i)
-    end
-end
-    return (-1) # for closed end tube
-end
-
-"""
-    A lazy way to tranfer Array{Array{Float64,1},1} to Array{Array{Int64,1},1}
-
-"""
-
-function truncate(Xarrays::Array{Array{Float64,1},1})
-
-    integerXarrays = Array{Array{Int64,1},1}(undef, length(Xarrays))
-
-    for i =1:length(Xarrays)
-        integerXarrays[i] = trunc.(Int, Xarrays[i])
-    end
-    return integerXarrays
-end
-
-"""
-    A function to create mapping indexes for Xarrays and Xwallarray
-
-    walltoliquid : Array{Tuple{Int64,Int64},1}
-    liquidtowall : Array{Array{Int64,1},1}
-"""
-
-function constructmapping(Xarrays,Xwallarray,closedornot,L)
-    walltoliquid = Array{Tuple{Int64,Int64},1}(undef, length(Xwallarray))
-
-    for i = 1:length(Xwallarray)
-        walltoliquid[i] = walltoliquidmapping(Xwallarray[i],Xarrays,closedornot,L)
-    end
-
-    liquidtowall = truncate(Xarrays)
-
-    for i = 1:length(Xarrays)
-        for j = 1:length(Xarrays[i])
-            liquidtowall[i][j] = liquidtowallmapping(Xarrays[i][j],Xwallarray)
-        end
-    end
-
-    return walltoliquid,liquidtowall
-end
 
 
 """
@@ -753,29 +464,7 @@ function wallθtovec(θwall)
     return [-1e10; θwall]
 end
 
-"""
-    When having a new Xp because of dynamics, Xarrays need to be updated, too.
-"""
 
-function updateXarrays(Xp,θarrays,L)
-
-    Xarrays = deepcopy(θarrays)
-
-    for i = 1:length(Xarrays)
-        if Xp[i][1] < Xp[i][2]
-            Xarrays[i] = range(Xp[i][1], Xp[i][2], length=length(Xarrays[i]))
-        else
-            Xarrays[i] = range(Xp[i][1], Xp[i][2]+L, length=length(Xarrays[i])) .- L
-            Xarrays[i] = mod.(Xarrays[i], L)
-        end
-    end
-
-    # for i = 1:length(Xp)
-    #     Xarrays[i] = LinRange(Xp[i][1],Xp[i][2],length(θarrays[i]))
-    # end
-
-    return Xarrays
-end
 
 # ```
 #     Depreciated
@@ -816,6 +505,79 @@ end
 #     end
 #
 #     return merge_flags
+# end
+
+
+# """
+#     (depreciated)
+#     This function aims to get the overlapping length between the vapor plug and each evaporator/condenser section and sum them up.
+#     It can sum up all evaporator sections or condensor sections respectively, but it cannot sum both of them at the same time.
+#     For example:
+#
+#     XpvaportoLoverlap(Xpvapor,Xe) sums all the overlapping regions for evaporator
+#     XpvaportoLoverlap(Xpvapor,Xc) sums all the overlapping regions for condensor
+#
+#         Xpvapor    ::   the locations of all interfaces, each element means a vapor plug.
+#         Xce        ::   the locations of all evaporators/condensors, each element is a evaporators/condensors section
+# """
+#
+# function XpvaportoLoverlap(Xpvapor,Xce)
+#     Loverlap = zeros(length(Xpvapor))
+#     for i = 1:length(Xpvapor)
+#         for j = 1:length(Xce)
+#             if ifoverlap(Xpvapor[i],Xce[j])
+#             Loverlap[i] += oneoverlap(Xpvapor[i],Xce[j])
+#             end
+#         end
+#     end
+#
+#     return Loverlap
+# end
+
+# """
+#     (depreciated)
+#     This is a sub-function of XpvaportoLoverlap to solve the overlapping length between a single vapor section and a single evaporator/condensor section
+#
+#     oneXpvapor ::  the locations of two ends of a vapor plug
+#     oneXce     ::  the locations of two ends of a evaporator/condensor
+# """
+#
+# function oneoverlap(oneXpvapor,oneXce)
+#     return min(oneXpvapor[end],oneXce[end]) - max(oneXpvapor[1],oneXce[1])
+# end
+#
+# """
+#     (depreciated)
+#     This is a sub-function to determine if there is a overlapping region between a single vapor section and a single evaporator/condensor section
+#
+#     oneXpvapor ::  the locations of two ends of a vapor plug
+#     oneXce     ::  the locations of two ends of a evaporator/condensor
+# """
+#
+# function ifoverlap(oneXpvapor,oneXce)
+#     return ( (oneXpvapor[end] >= oneXce[1]) || (oneXpvapor[1] <= oneXce[end]) ) && (oneXpvapor[end] > oneXce[1]) && (oneXpvapor[1] < oneXce[end])
+# end
+
+# """
+#     This is a temporary function to initialize wall temperature field
+#
+#     θᵣ     ::  one temperature value
+#     xvalue ::  one x value
+#     sys0   ::  system struct to get Xe and Xc
+# """
+#
+#
+# function settemperature!(θᵣ,xvalue,sys0)
+#
+#     if ifamong(xvalue, sys0.evaporator.Xe)
+#         θᵣ = sys0.evaporator.θe
+#
+#     elseif ifamong(xvalue, sys0.condenser.Xc)
+#         θᵣ = sys0.condenser.θc
+#     end
+#
+#     return θᵣ
+#
 # end
 
 # function onePtooneT(P,constant)
