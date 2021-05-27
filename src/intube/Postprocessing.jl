@@ -93,7 +93,7 @@ end
 #
 # function soltoResult(sol,sys0) #only good for one calculation per time point, not good for onec calculation for all time
 #
-#     γ = sys0.liquid.γ
+#     γ = sys0.vapor.γ
 #     numofliquidslug =  Integer( (size(sol)[1]-1)/5  )
 #
 #     MatrxXp=sol[1:2*numofliquidslug,:]
@@ -166,7 +166,7 @@ end
 #     end
 #
 #
-#     γ = sys0.liquid.γ
+#     γ = sys0.vapor.γ
 #     # numofliquidslug =  Integer( (size(sol)[1]-1)/5  )
 #     # numofliquidslug =  Integer( (indexes[1]-2)/5  )
 #     numofliquidslug =  Integer( (indexes[1]-3)/6  )

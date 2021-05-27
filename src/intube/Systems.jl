@@ -84,7 +84,7 @@ PHPSystem is a struct containing
 """
 
 mutable struct Liquid
-    γ::Float64
+    # γ::Float64
     Hₗ::Float64
     ρ::Float64
     ω::Float64
@@ -112,7 +112,7 @@ PHPSystem is a struct containing
 
 mutable struct Vapor
     γ::Float64
-    k::Float64
+    Hδ::Float64
     P::Array{Float64,1}
     δ::Array{Float64,1}
 end

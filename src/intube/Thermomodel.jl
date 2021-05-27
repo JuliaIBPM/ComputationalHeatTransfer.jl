@@ -13,10 +13,10 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     (Xp,dXdt0,M,δ)=vectoXMδ(u)
 
 
-    numofliquidslug =  Integer( (length(u) - 2)/6 )
+    numofliquidslug = p.tube.closedornot ? Integer( (length(u))/6 ) : Integer( (length(u) - 2)/6 )
     sys = deepcopy(p)
 
-    γ = sys.liquid.γ
+    γ = sys.vapor.γ
     ω = sys.liquid.ω
     ℘L = sys.liquid.℘L
     Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
@@ -58,7 +58,7 @@ if p.tube.closedornot == true
         # numofliquidslug =  Integer( (length(u))/6 )
         # sys = deepcopy(p)
         #
-        # γ = sys.liquid.γ
+        # γ = sys.vapor.γ
         # ω = sys.liquid.ω
         # ℘L = sys.liquid.℘L
         # Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
@@ -99,9 +99,9 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},θ::Array{Fl
     dMdt=zeros(length(Xpvapor))
 
     # get Hvapor
-    k = sys.vapor.k
+    Hδ = sys.vapor.Hδ
     δ = sys.vapor.δ
-    Hvapor = k ./ δ
+    Hvapor = Hδ ./ δ
 
 
     dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
@@ -128,9 +128,9 @@ function wallmodel(p::PHPSystem)
     γ = sys.vapor.γ
     Hₗ = sys.liquid.Hₗ
     # He = sys.evaporator.He
-    k = sys.vapor.k
+    Hδ = sys.vapor.Hδ
     δ = sys.vapor.δ
-    Hvapor = k ./ δ
+    Hvapor = Hδ ./ δ
 
     dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
@@ -277,9 +277,9 @@ function sys_to_heatflux(p::PHPSystem)
     γ = sys.vapor.γ
     Hₗ = sys.liquid.Hₗ
     # He = sys.evaporator.He
-    k = sys.vapor.k
+    Hδ = sys.vapor.Hδ
     δ = sys.vapor.δ
-    Hvapor = k ./ δ
+    Hvapor = Hδ ./ δ
 
 
     # dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
@@ -350,7 +350,7 @@ end
 #     numofliquidslug =  Integer( (length(u) - 1)/5 )
 #     sys0 = p
 #
-#     γ = sys0.liquid.γ
+#     γ = sys0.vapor.γ
 #     ω = sys0.liquid.ω
 #     ℘L = sys0.liquid.℘L
 #     Lvaporplug = XptoLvaporplug(Xp,sys0.tube.L,sys0.tube.closedornot)
