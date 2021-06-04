@@ -326,7 +326,7 @@ function sys_to_heatflux(p::PHPSystem)
         end
 
 
-    qwallarray = Harray.*(θarray_temp_flow - θarray)
+    qwallarray = -Harray.*(θarray_temp_flow - θarray)
 end
 
 # """
