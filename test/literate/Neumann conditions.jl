@@ -1,7 +1,7 @@
 using ComputationalHeatTransfer
 
 using Plots
-using LaTeXStrings
+#using LaTeXStrings
 
 ρ = 1;
 c = 1;
