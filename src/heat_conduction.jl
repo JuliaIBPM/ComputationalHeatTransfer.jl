@@ -76,6 +76,8 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
 
     "Bodies"
     bodies::Union{BodyList,Nothing}
+    "BC type"
+    bctype::Type
     "Body temperatures"
     bodytemps::Union{RigidMotionList,Nothing}
     "Volumetric heat inputs"
@@ -98,11 +100,15 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     dlc::Union{DoubleLayer,Nothing} # used for heat flux surface terms
 
     # Coordinate data, if present
-    Tpoints::VectorData{N,Float64}
+    points::VectorData{N,Float64}
+    normals::VectorData{N,Float64}
 
     # Pre-stored regularization and interpolation matrices (if present)
     Rc::Union{RegularizationMatrix,Nothing} # cell centers
     Ec::Union{InterpolationMatrix,Nothing}
+    Rf::Union{RegularizationMatrix,Nothing} # cell faces
+    Ef::Union{InterpolationMatrix,Nothing}
+    Cc::Union{Matrix,Nothing}
 
     # Operators
     f :: FT
@@ -113,8 +119,13 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     # Cache space
     Sc::Nodes{Primal, NX, NY,Float64}
     Sb::ScalarData{N,Float64}
+    Vf::Edges{Primal, NX, NY,Float64}
+    gradTf::Edges{Primal, NX, NY,Float64}
+    Vb::VectorData{N,Float64}
+    gradTb::VectorData{N,Float64}
     ΔTs::ScalarData{N,Float64}
     σ::ScalarData{N,Float64}
+    τ::ScalarData{N,Float64}
 
 end
 
@@ -126,6 +137,7 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
                        qmodel = nothing,
                        qline = nothing,
                        static_points = true,
+                       bctype = AdiabaticBC,
                        problem_side::Type{SD} = InternalProblem,
                        ddftype=CartesianGrids.Yang3) where {PT,SD<:ProblemSide}
 
@@ -137,6 +149,9 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
     Fo = α*Δt/Δx^2
 
     Sc = Nodes{Primal,NX,NY,Float64}()
+    Vf = Edges{Primal,NX,NY,Float64}()
+    gradTf = Edges{Primal,NX,NY,Float64}()
+
 
     #=
     # Set up buffers
@@ -162,12 +177,15 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
     N = numpts(bodies)
 
     Sb = ScalarData(N)
+    Vb = VectorData(N)
+    gradTb = VectorData(N)
     ΔTs = ScalarData(N)
     σ = ScalarData(N)
+    τ = ScalarData(N)
+    Cc = nothing
 
-    points, dlc, Rc, Ec =
-              _immersion_operators(bodies,g,problem_side_internal,ddftype,Sc,Sb)
-
+     points, normals, dlc, Rc, Ec, Rf, Ef, Cc =
+            _immersion_operators(bodies,g,problem_side_internal,bctype,ddftype,Sc,Sb,Vf,Vb)
 
     conduction_L = plan_laplacian(Sc,factor=α/Δx^2)
 
@@ -176,16 +194,21 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
       f = ConstrainedODEFunction(heatconduction_rhs!,conduction_L,_func_cache=state_prototype)
     else
       if static_points
-        state_prototype = solvector(state=Sc,constraint=σ)
-        f = ConstrainedODEFunction(heatconduction_rhs!,bc_constraint_rhs!,
-                                      heatconduction_op_constraint_force!,bc_constraint_op!,
+        if bctype <: DirichletBC
+          state_prototype = solvector(state=Sc,constraint=σ)
+          f = ConstrainedODEFunction(heatconduction_rhs!,temperature_bc_constraint_rhs!,
+                                      temperature_constraint_force!,temperature_constraint_op!,
                                       conduction_L,_func_cache=state_prototype)
+        elseif bctype <: NeumannBC
+          state_prototype = solvector(state=Sc)
+          f = ConstrainedODEFunction(heatconduction_rhs!,conduction_L,_func_cache=state_prototype)
+        end
       #=
         else
         state_prototype = solvector(state=Sc,constraint=σ,aux_state=zero_body_state(bodies))
         rhs! = ConstrainedSystems.r1vector(state_r1 = ns_rhs!,aux_r1 = rigid_body_rhs!)
-        f = ConstrainedODEFunction(rhs!,bc_constraint_rhs!,
-                                      ns_op_constraint_force!,bc_constraint_op!,
+        f = ConstrainedODEFunction(rhs!,temperature_bc_constraint_rhs!,
+                                      temperature_constraint_force!,temperature_constraint_op!,
                                       conduction_L,_func_cache=state_prototype,
                                       param_update_func=update_immersion_operators!)
         =#
@@ -196,14 +219,14 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
 
 
     HeatConduction{NX, NY, N, _motiontype(static_points), problem_side_internal, ddftype, typeof(f), typeof(state_prototype)}(
-                          params, bodies, bodytemps, qforce,
+                          params, bodies, bctype, bodytemps, qforce,
                           _heat_flux_regions(qflux,Sc,g),
                           _heat_model_regions(qmodel,Sc,g),
                           _line_source(qline,Sc,g),
                           g, Δt, # rk,
                           dlc,
-                          points, Rc, Ec,
-                          f,state_prototype,Sc,Sb,ΔTs,σ)
+                          points, normals, Rc, Ec, Rf, Ef, Cc,
+                          f,state_prototype,Sc,Sb,Vf,gradTf,Vb,gradTb,ΔTs,σ,τ)
 
 end
 
@@ -237,7 +260,8 @@ end
 
 # Routines to set up the immersion operators
 
-function _immersion_operators(bodies::BodyList,g::PhysicalGrid,problem_side::Type{SD},ddftype,Sc::GridData{NX,NY},Sb::PointData{N}) where {NX,NY,N,SD<:ComputationalHeatTransfer.ProblemSide}
+function _immersion_operators(bodies::BodyList,g::PhysicalGrid,problem_side::Type{SD},bctype::Type{BC},ddftype,
+                                Sc::ScalarGridData{NX,NY},Sb::ScalarData{N},Vf::VectorGridData{NX,NY},Vb::VectorData{N}) where {NX,NY,N,SD<:ComputationalHeatTransfer.ProblemSide,BC<:AbstractBC}
 
   points = VectorData(collect(bodies))
   numpts(bodies) == N || error("Inconsistent size of bodies")
@@ -253,22 +277,26 @@ function _immersion_operators(bodies::BodyList,g::PhysicalGrid,problem_side::Typ
 
   regop = _regularization(points,g,bodies,ddftype)
 
-  Rc = RegularizationMatrix(regop,Sb,Sc) # Used by B₁ᵀ
+  Rc = RegularizationMatrix(regop,Sb,Sc) # Used by B₁ᵀ in temperature constraints
   Ec = InterpolationMatrix(regop,Sc,Sb) # Used by constraint_rhs! and B₂
+  Rf = RegularizationMatrix(regop,Vb,Vf) # Used by B₁ᵀ in heat flux constraints
+  Ef = InterpolationMatrix(regop,Vf,Vb) # Used by constraint_rhs! and B₂
 
-  return points, dlc, Rc, Ec
+  Cc = _neumann_matrix(bctype,body_normals,Rf,Ef,Sc,Sb,Vf,Vb)
+
+  return points, body_normals, dlc, Rc, Ec, Rf, Ef, Cc
 end
 
 
 _immersion_operators(::Nothing,a...) =
-    VectorData(0), nothing, nothing, nothing
+    VectorData(0), VectorData(0), nothing, nothing, nothing, nothing, nothing, nothing
 
 
 # For updating the system with body data
 
 function update_immersion_operators!(sys::HeatConduction{NX,NY,N,MT,SD,DDF},bodies::BodyList) where {NX,NY,N,MT,SD,DDF<:CartesianGrids.DDFType}
     sys.bodies = deepcopy(bodies)
-    sys.points, sys.dlc, sys.Rc, sys.Ec =
+    sys.points, sys.dlc, sys.Rc, sys.Ec, sys.Rf, sys.Ef =
       _immersion_operators(sys.bodies,sys.grid,SD,DDF,sys.Sc,sys.Sb)
     return sys
 end
@@ -460,6 +488,27 @@ function set_linesource_strength!(sys::HeatConduction,q::Vector{T}) where {T<:Re
     return sys
 end
 
+# Form the matrix n.Ef*Rf*n for implementing Neumann conditions
+_neumann_matrix(a...) = nothing
+
+function _neumann_matrix(::Type{<:NeumannBC},normals,Rf::RegularizationMatrix,Ef::InterpolationMatrix,
+                          Sc::ScalarGridData{NX,NY},Sb::ScalarData{N},
+                          Vf::VectorGridData{NX,NY},Vb::VectorData{N}) where {NX,NY,N}
+
+  M = Matrix{Float64}(undef,N,N)
+
+  fill!(Sb,0.0)
+  for i in 1:N
+    Sb[i] = 1.0
+    product!(Vb,normals,Sb)
+    Vf .= Rf*Vb
+    Vb .= Ef*Vf
+    pointwise_dot!(Sb,Vb,normals)
+    M[:,i] .= Sb
+    fill!(Sb,0.0)
+  end
+  return M
+end
 
 
 include("operators/surfacetemperatures.jl")

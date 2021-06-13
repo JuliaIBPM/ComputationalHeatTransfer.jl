@@ -9,7 +9,8 @@ export heatconduction_rhs!
 function heatconduction_rhs!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY},t::Real) where {NX,NY}
   dT .= 0.0
   #_heatconduction_rhs_convectivederivative!(sys.Sc,T,sys,t)
-  _heatconduction_rhs_double_layer!(dT,sys,t)
+  #_heatconduction_rhs_double_layer!(dT,sys,t)
+  _heatconduction_rhs_double_layer_adiabatic!(dT,T,sys,sys.bctype)
   _heatconduction_rhs_forcing!(dT,sys,t)
   _heatconduction_rhs_qflux!(dT,sys)
   _heatconduction_rhs_qmodel!(dT,T,sys)
@@ -88,13 +89,32 @@ end
 @inline _heatconduction_rhs_double_layer!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,0},t::Real) where {NX,NY} = dT
 
 function _heatconduction_rhs_double_layer!(dT::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,N,MT,SD},t::Real) where {NX,NY,N,MT,SD}
+    @unpack params = sys
+    @unpack α = params
     Δx⁻¹ = 1/cellsize(sys)
-    fact = sys.α*Δx⁻¹
+    fact = α*Δx⁻¹
     surface_temperature_jump!(sys.ΔTs,sys,t)
     fill!(sys.Sc,0.0)
     sys.dlc(sys.Sc,sys.ΔTs)
     sys.Sc .*= fact
     dT .-= sys.Sc
+end
+
+@inline _heatconduction_rhs_double_layer_adiabatic!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,0},bctype) where {NX,NY} = dT
+
+@inline _heatconduction_rhs_double_layer_adiabatic!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,N},bctype) where {NX,NY,N} = dT
+
+
+function _heatconduction_rhs_double_layer_adiabatic!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,N},::Type{AdiabaticBC}) where {NX,NY,N}
+    @unpack params, ΔTs, Sc, Cc = sys
+    @unpack k = params
+    fill!(ΔTs,0.0)
+    heatflux_constraint_op!(ΔTs,T,sys)
+    ΔTs .= -(Cc\ΔTs)
+    ΔTs ./= k
+    fill!(Sc,0.0)
+    heatflux_constraint_force!(Sc,ΔTs,sys)
+    dT .-= Sc
 end
 
 
