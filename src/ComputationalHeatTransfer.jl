@@ -38,6 +38,13 @@ abstract type ExternalProblem <: ProblemSide end
 abstract type InternalProblem <: ProblemSide end
 abstract type ExternalInternalProblem <: ProblemSide end
 
+abstract type AbstractBC end
+abstract type NeumannBC <: AbstractBC end
+abstract type DirichletBC <: AbstractBC end
+abstract type AdiabaticBC <: NeumannBC end
+abstract type HomogeneousDirichletBC <: DirichletBC end
+
+
 const NDIM = 2
 
 include("utils/forcing.jl")
