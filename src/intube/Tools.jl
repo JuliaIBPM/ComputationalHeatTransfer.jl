@@ -288,7 +288,7 @@ end
     This function is to transform Xp of every interface to form an array of liquid length
         Xp    ::   the locations of all interfaces
 """
- 
+
 function XptoLliquidslug(Xp::Array{Tuple{Float64,Float64},1},L::Float64)
 
     Lliquidslug = zeros(length(Xp))
@@ -417,6 +417,31 @@ function constructXarrays(X0::Array{Tuple{Float64,Float64},1},N,θinitial,L)
 
     return(Xarrays,θarrays)
 end
+
+function constructoneXarray(X0::Array{Tuple{Float64,Float64},1},Nliquid,θinitial,L)
+    Xarrays=Array{Array{Float64, 1}, 1}(undef, length(X0))
+
+    Lliquid = XptoLliquidslug(X0,L)
+
+    # Nliquid =  floor.(Int, N.*Lliquid./L)
+
+    for i = 1:length(Xarrays)
+        if X0[i][1] < X0[i][2]
+            Xarrays[i] = range(X0[i][1], X0[i][2], length=Nliquid[i])
+        else
+            Xarrays[i] = range(X0[i][1], X0[i][2]+L, length=Nliquid[i]) .- L
+            Xarrays[i] = mod.(Xarrays[i], L)
+        end
+    end
+
+    θarrays = deepcopy(Xarrays)
+    for i = 1:length(θarrays)
+        θarrays[i][:] .= θinitial
+    end
+
+    return(Xarrays,θarrays)
+end
+
 
 """
     initialize X and θ field for wall, return Array{Float64, 1} and Array{Float64, 1}

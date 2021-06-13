@@ -19,7 +19,7 @@ function ODE_innertube(u,p,t)
 
 
 
-    walldu = duwallθtovec(wallmodel(newsys))
+    # walldu = duwallθtovec(wallmodel(newsys))
     # walldu = duwallθtovec(duwalltemp)
 
 
@@ -30,9 +30,11 @@ function ODE_innertube(u,p,t)
     # push!(θarraystemp, u[indexes[end]+1:end])
     # duliquidtemp = zero.(deepcopy(θarraystemp))
     # duliquidtemp = liquidmodel(newsys)
-    liquiddu = duliquidθtovec(liquidmodel(newsys))
+    @time liquiddu = duliquidθtovec(liquidmodel(newsys))
 
-    du = [dynamicsdu;walldu;liquiddu]
+    du = [dynamicsdu;liquiddu]
+
+    # println(length(p.liquid.θarrays))
 
     return(du)
 

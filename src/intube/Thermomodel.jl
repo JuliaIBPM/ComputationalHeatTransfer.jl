@@ -42,7 +42,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     end
 
 # not sure which one is better
-    du[4*numofliquidslug+1:5*numofliquidslug+1] .= dMdtdynamicsmodel(Xpvapor,θ,sys)
+    du[4*numofliquidslug+1:5*numofliquidslug+1] .= dMdtdynamicsmodel(Xpvapor,sys)
     du[5*numofliquidslug+2:end] .= [0.0]
 
     return du
@@ -85,7 +85,7 @@ if p.tube.closedornot == true
         end
 
     # not sure which one is better
-        du[4*numofliquidslug+1:5*numofliquidslug] .= dMdtdynamicsmodel(Xpvapor,θ,sys)
+        du[4*numofliquidslug+1:5*numofliquidslug] .= dMdtdynamicsmodel(Xpvapor,sys)
         du[5*numofliquidslug+1:end] .= [0.0] # equals to 0 for now
 
         return du
@@ -94,7 +94,7 @@ end
 
 end
 
-function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},θ::Array{Float64,1},sys::PHPSystem)
+function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSystem)
 
     dMdt=zeros(length(Xpvapor))
 
@@ -103,17 +103,37 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},θ::Array{Fl
     δ = sys.vapor.δ
     Hvapor = Hδ ./ δ
 
+    #get θ
+    P = sys.vapor.P
+    γ = sys.vapor.γ
 
-    dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+    θ = real.((P .+ 0im).^((γ-1)/γ)) # isentropic
 
+    dx_wall = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
     for i = 1:length(Xpvapor)
-        indexes = findall( x -> (mod(x[1],length(Xpvapor)) == mod(i,length(Xpvapor)) && (x[end] == -1)), sys.mapping.walltoliquid)
+        a, b = Xpvapor[i][1], Xpvapor[i][2];
+        L_temp    = mod(b-a,sys.tube.L)		   ## note n=10
+        n = Int64(div(L_temp,dx_wall) == 0 ? 1 : div(L_temp,dx_wall))
 
-            for j in length(indexes)
-                dMdt[i] += Hvapor[i]*dx*(sys.wall.θarray[indexes[j]] - θ[i])
-            end
+
+        dx_vapor = L_temp/n
+        xs = mod.(a .+ (0:n) * dx_vapor,[sys.tube.L]);          ## n, right is 1:n * delta
+
+        θ_wall_inter = sys.mapping.θ_interp_walltoliquid
+
+        fx = map(θ_wall_inter, xs) .- θ[i]
+        # println(xs)
+        dMdt[i] = sum(fx) * dx_vapor * Hvapor[i]
     end
+
+    # for i = 1:length(Xpvapor)
+    #     indexes = findall( x -> (mod(x[1],length(Xpvapor)) == mod(i,length(Xpvapor)) && (x[end] == -1)), sys.mapping.walltoliquid)
+    #
+    #         for j in length(indexes)
+    #             dMdt[i] += Hvapor[i]*dx*(sys.wall.θarray[indexes[j]] - θ[i])
+    #         end
+    # end
     return dMdt
 
 end
@@ -192,18 +212,39 @@ function liquidmodel(p::PHPSystem)
 
 
     θarray_temp_wall = zero.(deepcopy(θarrays))
+    # for i = 1:length(θarrays)
+    #
+    #     dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+    #
+    #     indexes = sys.mapping.liquidtowall[i]
+    #
+    #     for j = 1:length(indexes)
+    #         θarray_temp_wall[i][j] = sys.wall.θarray[indexes[j]]
+    #     end
+    #
+    #     du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* (θarray_temp_wall[i] - θarrays[i]) .* dx
+    # end
+
+    # println(length(θarrays))
+
     for i = 1:length(θarrays)
+        # a, b = Xpvapor[i][1], Xpvapor[i][2];
+        # L_temp    = mod(b-a,sys.tube.L)		   ## note n=10
+        # n = Int64(div(L_temp,dx_wall) == 0 ? 1 : div(L_temp,dx_wall))
+        #
+        #
+        # dx_vapor = (b - a)/n
+        xs = sys.liquid.Xarrays[i];
+        dx = mod(xs[2] - xs[1], sys.tube.L)
+             ## n, right is 1:n * delta
 
-        dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+        θ_wall_inter = sys.mapping.θ_interp_walltoliquid
 
-        indexes = sys.mapping.liquidtowall[i]
-
-        for j = 1:length(indexes)
-            θarray_temp_wall[i][j] = sys.wall.θarray[indexes[j]]
-        end
-
-        du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* (θarray_temp_wall[i] - θarrays[i]) .* dx
+        fx = map(θ_wall_inter, xs) - θarrays[i]
+        du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx .* dx
+        # dMdt[i] = sum(fx) * dx_vapor .* Hₗ
     end
+
 
 
     return du
@@ -241,7 +282,7 @@ end
 """
 
 
-function laplacian(u,periodic=false)
+function laplacian(u,periodic=true)
     unew = deepcopy(u)
 
     dl = ones(length(u)-1)
@@ -284,49 +325,16 @@ function sys_to_heatflux(p::PHPSystem)
 
     # dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
-    Xarray = sys.wall.Xarray
-    Wearray = getwallWearray(Xarray,sys)
+    # Xarray = sys.wall.Xarray
+    θ_interp_liquidtowall = sys.mapping.θ_interp_liquidtowall
+    H_interp_liquidtowall = sys.mapping.H_interp_liquidtowall
 
-    # Hwc = sys.condenser.Hwc
-    # θc  = sys.condenser.θc
-    # Xc  = sys.condenser.Xc
-    # hevisidec=ifamong.(Xarray,[Xc])
+    xs =  sys.wall.Xarray
 
-    Harray = zero(deepcopy(θarray))
-    θarray_temp_flow = zero(deepcopy(θarray))
+    dθarray = map(θ_interp_liquidtowall, xs) .- θarray
+    Harray  = map(H_interp_liquidtowall, xs)
 
-        for i = 1:length(θarray)
-
-            index = sys.mapping.walltoliquid[i]
-
-            if index[2] == -1
-
-                if sys.tube.closedornot == false
-                    P = sys.vapor.P[index[1]]
-                end
-
-
-                if sys.tube.closedornot == true
-                    if index[1] > length(sys.vapor.P)
-                        P = sys.vapor.P[index[1]-length(sys.vapor.P)]
-                    else
-                        P = sys.vapor.P[index[1]]
-                    end
-                end
-
-                θarray_temp_flow[i] = real.((P .+ 0im).^((γ-1)/γ))
-
-                Harray[i] = Hvapor[index[1]]
-            else
-                θliquidarrays = sys.liquid.θarrays
-                θarray_temp_flow[i] = θliquidarrays[index[1]][index[2]]
-
-                Harray[i] = Hₗ
-            end
-        end
-
-
-    qwallarray = -Harray.*(θarray_temp_flow - θarray)
+    qwallarray = -Harray.*dθarray
 end
 
 # """

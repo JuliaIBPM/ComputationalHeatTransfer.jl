@@ -1,33 +1,49 @@
 export merging_affect!,merging_condition,nucleateboiling
 
 function merging_affect!(integrator)
-    δv = 0.01
+    δv = 0.001
 
-    p = deepcopy(getcurrentsys(integrator.u,sys0));
+    p = deepcopy(getcurrentsys(integrator.u,integrator.p));
     L = p.tube.L;
 
     merge_flags = getmerge_flags(δv,p)
-    indexmergingsite = findall(x->x == true, merge_flags)
+    indexmergingsite = sort(findall(x->x == true, merge_flags),rev = true)
 
+    # println(indexmergingsite)
+
+    # println(length(p.liquid.Xarrays))
+    # println(length(p.liquid.Xp))
 
     for i in indexmergingsite
         p = merging(p,i)
+
+    #
+    #     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
+    #     M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+    #     unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); liquidθtovec(p.liquid.θarrays)];
+    # #
+    # #
+    #
+    #     p = getcurrentsys(unew,p)
+    #
+    #     unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); liquidθtovec(p.liquid.θarrays)];
     end
+
 
 
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
 
-    unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); wallθtovec(p.wall.θarray); liquidθtovec(p.liquid.θarrays)];
+    unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); liquidθtovec(p.liquid.θarrays)];
 
-        resize!(integrator.u,size(unew,1)::Int)
+    resize!(integrator.u,size(unew,1)::Int)
     integrator.u = deepcopy(unew)
 end
 
 function merging_condition(u,t,integrator)     # only for closed loop tube
 
-    δv = 0.01
+    δv = 0.001
 
     sys = deepcopy(getcurrentsys(integrator.u,integrator.p));
 
@@ -36,21 +52,22 @@ function merging_condition(u,t,integrator)     # only for closed loop tube
     return sum(merge_flags) != 0
 end
 
-function merging(sys,i)
+function merging(p,i)
 
         # get the liquid interface velocities and lengthes for merging
-    Lliquidslug = XptoLliquidslug(sys.liquid.Xp,sys.tube.L)
-    Lvaporplug =    XptoLvaporplug(sys.liquid.Xp,sys.tube.L,sys.tube.closedornot)
+    Lliquidslug = XptoLliquidslug(p.liquid.Xp,p.tube.L)
+    Lvaporplug =    XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
+
+    # println(length(p.liquid.Xp))
+
+    Xpnewone = (i != 1) ? (mod((p.liquid.Xp[i-1][1] + Lvaporplug[i]/2),L), mod((p.liquid.Xp[i][end] - Lvaporplug[i]/2),L)) : (mod((p.liquid.Xp[end][1] + Lvaporplug[i]/2),L), mod((p.liquid.Xp[i][end] - Lvaporplug[i]/2),L))
+    dXdtnewonevalue = (i != 1) ? (p.liquid.dXdt[i-1][1]*Lliquidslug[i-1] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[i-1]+Lliquidslug[i]) : (p.liquid.dXdt[end][1]*Lliquidslug[end] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[end]+Lliquidslug[i])
 
 
-    Xpnewone = (i != 1) ? (mod((sys.liquid.Xp[i-1][1] + Lvaporplug[i]/2),L), mod((sys.liquid.Xp[i][end] - Lvaporplug[i]/2),L)) : (mod((sys.liquid.Xp[end][1] + Lvaporplug[i]/2),L), mod((sys.liquid.Xp[i][end] - Lvaporplug[i]/2),L))
-    dXdtnewonevalue = (i != 1) ? (sys.liquid.dXdt[i-1][1]*Lliquidslug[i-1] + sys.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[i-1]+Lliquidslug[i]) : (sys.liquid.dXdt[end][1]*Lliquidslug[end] + sys.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[end]+Lliquidslug[i])
 
 
 
-
-
-        systemp = deepcopy(sys)
+        systemp = deepcopy(p)
 
 
     if i != 1
@@ -72,15 +89,20 @@ function merging(sys,i)
     splice!(systemp.vapor.δ,i)
     splice!(systemp.vapor.P,i)
 
-    N = (i != 1) ? length([sys.liquid.Xarrays[i-1]; sys.liquid.Xarrays[i]]) : length([sys.liquid.Xarrays[end]; sys.liquid.Xarrays[i]])
+    # N = (i != 1) ? length([sys.liquid.Xarrays[i-1]; sys.liquid.Xarrays[i]]) : length([sys.liquid.Xarrays[end]; sys.liquid.Xarrays[i]])
+
+    N = length(p.wall.Xarray)
 
 
-    Xarraysnewone = constructXarrays([(i != 1) ? systemp.liquid.Xp[i-1] : systemp.liquid.Xp[i]],N,0.0,sys.tube.L)[1][1]
+    Nliquid = (i != 1) ? length([systemp.liquid.Xarrays[i-1]; systemp.liquid.Xarrays[i]]) : length([systemp.liquid.Xarrays[end]; systemp.liquid.Xarrays[i]])
+    Xarraysnewone = constructoneXarray([(i != 1) ? systemp.liquid.Xp[i-1] : systemp.liquid.Xp[end]],Nliquid,0.0,p.tube.L)[1][1]
+
+
     splice!(systemp.liquid.Xarrays,i);
     (i != 1) ? splice!(systemp.liquid.Xarrays,i-1) : splice!(systemp.liquid.Xarrays,length(systemp.liquid.Xarrays));
     (i != 1) ? insert!(systemp.liquid.Xarrays,i-1,Xarraysnewone) : insert!(systemp.liquid.Xarrays,i,Xarraysnewone);
 
-    θarraysnewone = (i != 1) ? [sys.liquid.θarrays[i-1]; sys.liquid.θarrays[i]] : [sys.liquid.θarrays[end]; sys.liquid.θarrays[i]]
+    θarraysnewone = (i != 1) ? [p.liquid.θarrays[i-1]; p.liquid.θarrays[i]] : [p.liquid.θarrays[end]; p.liquid.θarrays[i]]
     splice!(systemp.liquid.θarrays,i);
     (i != 1) ? splice!(systemp.liquid.θarrays,i-1) : splice!(systemp.liquid.θarrays,length(systemp.liquid.θarrays));
     (i != 1) ? insert!(systemp.liquid.θarrays,i-1,θarraysnewone) : insert!(systemp.liquid.θarrays,i,θarraysnewone);

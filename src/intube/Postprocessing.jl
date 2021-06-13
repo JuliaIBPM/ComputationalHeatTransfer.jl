@@ -19,10 +19,10 @@ function getcurrentsys(u,sys0)
 
     Xp,dXdt,M,δ = vectoXMδ(u[1:indexes[1]-1])
     modX!(Xp,sys0.tube.L)
-    θwallrec = u[indexes[1]+1:indexes[2]-1]
+    # θwallrec = u[indexes[1]+1:indexes[2]-1]
 
-    for i = 1:length(indexes)-2
-    push!(θliquidrec, u[indexes[i+1]+1:indexes[i+2]-1])
+    for i = 1:length(indexes)-1
+    push!(θliquidrec, u[indexes[i]+1:indexes[i+1]-1])
     end
     push!(θliquidrec, u[indexes[end]+1:end])
 
@@ -40,13 +40,57 @@ function getcurrentsys(u,sys0)
     sysnew.vapor.P = P
     sysnew.vapor.δ = δ
 
-    sysnew.wall.θarray = θwallrec
+    # sysnew.wall.θarray = θwall
 
-    walltoliquid, liquidtowall = constructmapping(sysnew.liquid.Xarrays ,sysnew.wall.Xarray, sysnew.tube.closedornot, sysnew.tube.L)
-    sysnew.mapping = Mapping(walltoliquid,liquidtowall)
+    θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall = sys_interpolation(sys0)
+    sysnew.mapping = Mapping(θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall)
 
     return sysnew
 end
+
+# function getcurrentsys(u,sys0)
+#
+#         indexes = Int64[]
+#         θliquidrec = Array[]
+#
+#         for i = 1:length(u)
+#             if abs(u[i]+1e10) <= 10^(-1)
+#                 push!(indexes,i)
+#             end
+#         end
+#
+#
+#     Xp,dXdt,M,δ = vectoXMδ(u[1:indexes[1]-1])
+#     modX!(Xp,sys0.tube.L)
+#     θwallrec = u[indexes[1]+1:indexes[2]-1]
+#
+#     for i = 1:length(indexes)-2
+#     push!(θliquidrec, u[indexes[i+1]+1:indexes[i+2]-1])
+#     end
+#     push!(θliquidrec, u[indexes[end]+1:end])
+#
+#     sysnew = deepcopy(sys0)
+#
+#     sysnew.liquid.Xp = Xp
+#     sysnew.liquid.dXdt = dXdt
+#     sysnew.liquid.θarrays = θliquidrec
+#     sysnew.liquid.Xarrays = updateXarrays(Xp,sysnew.liquid.θarrays,sysnew.tube.L)
+#
+#
+#     Lvaporplug = XptoLvaporplug(Xp,sys0.tube.L,sys0.tube.closedornot)
+#     γ = sys0.vapor.γ
+#     P = real.((M./Lvaporplug .+ 0im).^(γ))
+#     sysnew.vapor.P = P
+#     sysnew.vapor.δ = δ
+#
+#     sysnew.wall.θarray = θwallrec
+#
+#     walltoliquid, liquidtowall = constructmapping(sysnew.liquid.Xarrays ,sysnew.wall.Xarray, sysnew.tube.closedornot, sysnew.tube.L)
+#     sysnew.mapping = Mapping(walltoliquid,liquidtowall)
+#
+#     return sysnew
+# end
+
 
 function modX!(Xp,L)
     for i = 1:length(Xp)

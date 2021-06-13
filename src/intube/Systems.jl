@@ -153,9 +153,15 @@ PHPSystem is a struct containing
     Xe dimensionless evaporater range
 """
 
+# mutable struct Mapping
+#     walltoliquid::Array{Tuple{Int64,Int64},1}
+#     liquidtowall::Array{Array{Int64,1},1}
+# end
+
 mutable struct Mapping
-    walltoliquid::Array{Tuple{Int64,Int64},1}
-    liquidtowall::Array{Array{Int64,1},1}
+    θ_interp_walltoliquid
+    θ_interp_liquidtowall
+    H_interp_liquidtowall
 end
 
 """
@@ -182,6 +188,15 @@ mutable struct PHPSystem
     mapping::Mapping
 end
 
+
+mutable struct PHPSystem_nomapping
+    tube::Tube
+    evaporator::Evaporator
+    condenser::Condenser
+    liquid::Liquid
+    vapor::Vapor
+    wall::Wall
+end
 # """
 # PHPSystem is a struct containing
 #     γ

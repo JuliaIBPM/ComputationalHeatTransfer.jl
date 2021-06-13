@@ -5,26 +5,33 @@
 export boiling_condition,boiling_affect!,nucleateboiling
 
 function boiling_condition(u,t,integrator)
-    return (abs(mod(t,0.01)-0.01) < 1e-6) || mod(t,0.01) < 1e-6
+    # return (abs(mod(t,0.001)-0.001) < 1e-6) || mod(t,0.001) < 1e-6
+    return mod(t,0.01)
 end
 
 function boiling_affect!(integrator)
-#     println("hahhaha")
+    # println("hahhaha")
     Δθthreshold = 0.01
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p))
 
     for i = 1:length(p.wall.Xstations)
 
-        if ifamong(p.wall.Xstations[i], p.liquid.Xp)
+        if ifamong(p.wall.Xstations[i], p.liquid.Xp) && suitable_for_boiling(p,i)
+            # println(p.wall.Xstations[i])
+            # println(p.liquid.Xp)
             Δθ = getsuperheat(p.wall.Xstations[i],p)
             if Δθ > Δθthreshold
 
                 # get the insert pressure.
-                wallindex = getoneXarrayindex(p.wall.Xstations[i],p.wall.Xarray)
-                liquidindex = p.mapping.walltoliquid[wallindex]
-                θinsert = p.liquid.θarrays[liquidindex[1]][liquidindex[2]]
+                # wallindex = getoneXarrayindex(p.wall.Xstations[i],p.wall.Xarray)
+                # liquidindex = p.mapping.walltoliquid[wallindex]
+                # θinsert = p.liquid.θarrays[liquidindex[1]][liquidindex[2]]
+
+                θinsert = p.mapping.θ_interp_liquidtowall(Xstations[i])
                 Pinsert = θinsert.^(γ/(γ-1))
+
+                # println((p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2))
 
                 p = nucleateboiling(p,(p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2),Pinsert) # P need to be given from energy equation
             end
@@ -38,7 +45,7 @@ function boiling_affect!(integrator)
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
 
-    unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); wallθtovec(p.wall.θarray); liquidθtovec(p.liquid.θarrays)];
+    unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ);liquidθtovec(p.liquid.θarrays)];
 
 #     set_u!(integrator,  unew)
     resize!(integrator.u,length(unew))
@@ -63,7 +70,7 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     Lvaporplug =    XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
     M = P.^(1/γ).* Lvaporplug
 
-    index = getinsertindex(Xp,Xvapornew,closedornot)
+    index = getinsertindex(Xp,(Xvapornew[2]+Xvapornew[1])/2,sys.tube.L)
 
 
 
@@ -104,9 +111,13 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     sysnew.vapor.P = Pnew
     sysnew.vapor.δ = δnew
 
-    walltoliquid,liquidtowall = constructmapping(sysnew.liquid.Xarrays ,sysnew.wall.Xarray, sysnew.tube.closedornot, sysnew.tube.L)
-    # print(typeof(walltoliquid),"\n",typeof(walltoliquid),"\n")
-    sysnew.mapping = Mapping(walltoliquid,liquidtowall)
+    # walltoliquid,liquidtowall = constructmapping(sysnew.liquid.Xarrays ,sysnew.wall.Xarray, sysnew.tube.closedornot, sysnew.tube.L)
+    # # print(typeof(walltoliquid),"\n",typeof(walltoliquid),"\n")
+    # sysnew.mapping = Mapping(walltoliquid,liquidtowall)
+
+
+    θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall = sys_interpolation(sysnew)
+    sysnew.mapping = Mapping(θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall)
 
 return sysnew
 end
@@ -147,7 +158,12 @@ end
     arrayindex = getarrayindex(Xpnew[index][2],Xarrays[index])
 
     θarraysnewleft = θarrays[index][1:arrayindex]
+    append!(θarraysnewleft, θarrays[index][arrayindex])
+
     θarraysnewright= θarrays[index][arrayindex+1:end]
+    insert!(θarraysnewleft, 1, θarrays[index][arrayindex])
+    insert!(θarraysnewleft, 1, θarrays[index][arrayindex])
+
 
     splice!(θarraysnew, index)
     insert!(θarraysnew, index,θarraysnewleft)
@@ -158,9 +174,12 @@ end
 function getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
     Xarraysnew = deepcopy(Xarrays)
     arrayindex = getarrayindex(Xpnew[index][2],Xarrays[index])
+    # println(arrayindex)
+    # println(Xpnew[index][2])
+    # println(Xarrays[index])
 
-    Xarraysnewleft = LinRange(Xpnew[index][1],Xpnew[index][2],arrayindex)
-    Xarraysnewright= LinRange(Xpnew[index+1][1],Xpnew[index+1][2],length(Xarrays[index])-arrayindex)
+    Xarraysnewleft = LinRange(Xpnew[index][1],Xpnew[index][2],arrayindex+1)
+    Xarraysnewright= LinRange(Xpnew[index+1][1],Xpnew[index+1][2],length(Xarrays[index])-arrayindex+2)
 
     splice!(Xarraysnew, index)
     insert!(Xarraysnew, index,Xarraysnewleft)
@@ -168,13 +187,29 @@ function getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
 end
 
 
-function getinsertindex(Xp,Xvapornew,closedornot)
+function getinsertindex(Xp,Xvapornew_center,L)
 
-for index = 1:length(Xp)
-    if Xp[index][1] <= Xvapornew[1] && Xp[index][2] >= Xvapornew[2]
-        return index
-end
+if !closedornot
+    for index = 1:length(Xp)
+        if Xp[index][1] <= Xvapornew_center && Xp[index][2] >= Xvapornew_center
+            return index
+        end
     end
+end
+
+if closedornot
+    for index = 1:length(Xp)
+        if Xp[index][1] <= Xvapornew_center && Xp[index][2] >= Xvapornew_center && Xp[index][2] >= Xp[index][1]
+            return index
+        end
+
+        if (mod(Xvapornew_center - Xp[index][1],L) < mod(Xp[index][2] - Xp[index][1],L)) && Xp[index][2] <= Xp[index][1]
+            return index
+        end
+    end
+end
+# println((Xvapornew[2]+Xvapornew[1])/2)
+# println(Xp)
         return NaN
 end
 
@@ -228,10 +263,8 @@ end
 
 function getsuperheat(Xstation,sys)
 
-    wallindex = getoneXarrayindex(Xstation,sys.wall.Xarray)
-    liquidindex = sys.mapping.walltoliquid[wallindex]
 
-    Δθ = sys.wall.θarray[wallindex] - sys.liquid.θarrays[liquidindex[1]][liquidindex[2]]
+    Δθ = sys.mapping.θ_interp_walltoliquid(Xstation) - sys.mapping.θ_interp_liquidtowall(Xstation)
 
     return Δθ
 end
@@ -253,6 +286,31 @@ function getoneXarrayindex(X,Xarray)
     end
 
     return length(Xarray)
+end
+
+function suitable_for_boiling(p,i)
+    suitable_flag =  false
+    index_max = length(p.liquid.Xp)
+
+
+        index = getinsertindex(p.liquid.Xp,p.wall.Xstations[i],p.tube.L)
+        Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
+
+        L_vapor_left =  Lvaporplug[index]
+        L_vapor_right = (index == index_max) ? Lvaporplug[1] : Lvaporplug[index + 1]
+
+        suitable_flag = (p.tube.d < L_vapor_left) && (p.tube.d < L_vapor_right) ? true : false
+
+
+
+        L_liquid_left =  mod(p.wall.Xstations[i] - p.liquid.Xp[index][1],p.tube.L)
+        L_liquid_right = mod(p.liquid.Xp[index][2] - p.wall.Xstations[i],p.tube.L)
+
+        if (10*p.tube.d > L_liquid_left) || (10*p.tube.d > L_liquid_right)
+            suitable_flag = false
+        end
+
+    return suitable_flag
 end
 
 
