@@ -1,8 +1,9 @@
 # Routines to compute surface temperatures and their jumps
 
 @inline function surface_temperature_jump!(Δus::VectorData{N},sys::HeatConduction{NX,NY,N},t::Real) where {NX,NY,N}
-    assign_temperature!(sys.Sb,sys.bodies,sys.bodytemps,t)
-    surface_temperature_jump!(Δus,sys.Vb,sys)
+    #assign_temperature!(sys.Sb,sys.bodies,sys.bodytemps,t)
+    fill!(sys.Sb,0.0)
+    surface_temperature_jump!(Δus,sys.Sb,sys)
     return Δus
   end
 
@@ -20,7 +21,8 @@
 
 
 @inline function surface_temperature!(T̄s::ScalarData{N},sys::HeatConduction{NX,NY,N},t::Real) where {NX,NY,N}
-    assign_temperature!(sys.Sb,sys.bodies,sys.bodytemps,t)
+    #assign_temperature!(sys.Sb,sys.bodies,sys.bodytemps,t)
+    fill!(sys.Sb,0.0)
     surface_temperature!(T̄s,sys.Sb,sys)
     return T̄s
   end
