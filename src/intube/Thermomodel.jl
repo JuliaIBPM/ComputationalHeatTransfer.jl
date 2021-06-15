@@ -1,6 +1,6 @@
 # module Thermomodel
 
-export dMdtdynamicsmodel,wallmodel,liquidmodel,dynamicsmodel,sys_to_heatflux
+export dMdtdynamicsmodel,wallmodel,liquidmodel,dynamicsmodel,sys_to_heatflux,sys_to_Harray
 # zhang2002model!,dMdtzhang2002model,dynamicsmodel
 
 # using ..Systems,..Tools
@@ -335,6 +335,33 @@ function sys_to_heatflux(p::PHPSystem)
     Harray  = map(H_interp_liquidtowall, xs)
 
     qwallarray = -Harray.*dθarray
+end
+
+function sys_to_Harray(p::PHPSystem)
+
+    sys = deepcopy(p)
+
+    θarray = sys.wall.θarray
+    γ = sys.vapor.γ
+    Hₗ = sys.liquid.Hₗ
+    # He = sys.evaporator.He
+    Hδ = sys.vapor.Hδ
+    δ = sys.vapor.δ
+    Hvapor = Hδ ./ δ
+
+
+    # dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+
+    # Xarray = sys.wall.Xarray
+    # θ_interp_liquidtowall = sys.mapping.θ_interp_liquidtowall
+    H_interp_liquidtowall = sys.mapping.H_interp_liquidtowall
+
+    xs =  sys.wall.Xarray
+
+    # dθarray = map(θ_interp_liquidtowall, xs) .- θarray
+    Harray  = map(H_interp_liquidtowall, xs)
+
+    Harray
 end
 
 # """
