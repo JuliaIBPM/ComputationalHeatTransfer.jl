@@ -2,27 +2,33 @@
 #
 # using ..Systems,..Tools
 
-export boiling_condition,boiling_affect!,nucleateboiling
-
+export boiling_affect!,nucleateboiling
+# boiling_condition,
 function boiling_condition(u,t,integrator)
-    # return (abs(mod(t,0.001)-0.001) < 1e-6) || mod(t,0.001) < 1e-6
-    return mod(t,0.01)
+    t_to_nondi_t = 3.42e-01
+    t_interval = 0.1 * t_to_nondi_t
+    ϵ = 1e-6
+
+    return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
+    # return mod(t,0.01*t_to_nondi_t)
+    # mod(t,t_interval) - ϵ
 end
 
 function boiling_affect!(integrator)
-    # println("hahhaha")
-    Δθthreshold = 0.01
+    # println("Boiled!")
+    Δθthreshold = 1e-2
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p))
 
     for i = 1:length(p.wall.Xstations)
 
         if ifamong(p.wall.Xstations[i], p.liquid.Xp) && suitable_for_boiling(p,i)
+
             # println(p.wall.Xstations[i])
-            # println(p.liquid.Xp)
+            # println(length(p.liquid.Xp))
             Δθ = getsuperheat(p.wall.Xstations[i],p)
             if Δθ > Δθthreshold
-
+                println("Boiled!")
                 # get the insert pressure.
                 # wallindex = getoneXarrayindex(p.wall.Xstations[i],p.wall.Xarray)
                 # liquidindex = p.mapping.walltoliquid[wallindex]

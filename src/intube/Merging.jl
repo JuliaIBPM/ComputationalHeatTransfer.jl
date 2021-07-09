@@ -1,6 +1,7 @@
 export merging_affect!,merging_condition,nucleateboiling
 
 function merging_affect!(integrator)
+    println("merged!")
     δv = 0.001
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
@@ -50,6 +51,7 @@ function merging_condition(u,t,integrator)     # only for closed loop tube
     merge_flags = getmerge_flags(δv,sys)
 
     return sum(merge_flags) != 0
+    # return true
 end
 
 function merging(p,i)
