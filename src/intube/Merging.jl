@@ -34,7 +34,8 @@ function merging_affect!(integrator)
 
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
-    M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+    M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
+    # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
 
     unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); liquidθtovec(p.liquid.θarrays)];
 

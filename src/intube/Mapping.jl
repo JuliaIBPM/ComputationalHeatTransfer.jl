@@ -180,7 +180,8 @@ function sys_interpolation(sys)
     θ_inner = Array{Float64}(undef, 0)
     H_inner = Array{Float64}(undef, 0)
     mk = 0
-    θ = real.((sys.vapor.P .+ 0im).^((sys.vapor.γ-1)/sys.vapor.γ)) # isentropic
+    θ = nondi_PtoT.(sys.vapor.P)
+    # θ = real.((sys.vapor.P .+ 0im).^((sys.vapor.γ-1)/sys.vapor.γ)) # isentropic
     H_vapor = sys.vapor.Hδ ./ sys.vapor.δ
     H_liquid = sys.liquid.Hₗ
 

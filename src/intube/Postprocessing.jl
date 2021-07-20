@@ -36,13 +36,14 @@ function getcurrentsys(u,sys0)
 
     Lvaporplug = XptoLvaporplug(Xp,sys0.tube.L,sys0.tube.closedornot)
     γ = sys0.vapor.γ
-    P = real.((M./Lvaporplug .+ 0im).^(γ))
+    P = nondi_DtoP.(M./Lvaporplug)
+    # P = real.((M./Lvaporplug .+ 0im).^(γ))
     sysnew.vapor.P = P
     sysnew.vapor.δ = δ
 
     # sysnew.wall.θarray = θwall
 
-    θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall = sys_interpolation(sys0)
+    θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall = sys_interpolation(sysnew)
     sysnew.mapping = Mapping(θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall)
 
     return sysnew

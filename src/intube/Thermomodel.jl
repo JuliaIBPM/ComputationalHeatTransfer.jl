@@ -25,9 +25,10 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     Xpvapor = getXpvapor(Xp,sys.tube.L,sys.tube.closedornot)
 
 
-
-    P = real.((M./Lvaporplug .+ 0im).^(γ))
-    θ = real.((P .+ 0im).^((γ-1)/γ))
+    P = nondi_DtoP.(M./Lvaporplug)
+    θ = nondi_PtoT.(P)
+    # P = real.((M./Lvaporplug .+ 0im).^(γ))
+    # θ = real.((P .+ 0im).^((γ-1)/γ))
 
 
     if p.tube.closedornot == false
@@ -107,7 +108,8 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
     P = sys.vapor.P
     γ = sys.vapor.γ
 
-    θ = real.((P .+ 0im).^((γ-1)/γ)) # isentropic
+    θ = nondi_PtoT.(P)
+    # θ = real.((P .+ 0im).^((γ-1)/γ)) # isentropic
 
     dx_wall = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
@@ -184,7 +186,8 @@ function wallmodel(p::PHPSystem)
                     end
                 end
 
-                θarray_temp_flow[i] = real.((P .+ 0im).^((γ-1)/γ))
+
+                θarray_temp_flow[i] = nondi_PtoT.(P)
 
                 H[i] = Hvapor[index[1]]
             else

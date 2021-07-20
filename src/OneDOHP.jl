@@ -11,4 +11,5 @@ module OneDOHP
     includet("intube/Merging.jl")
     includet("intube/TimeMarching.jl")
     includet("intube/PostProcessing.jl")
+    includet("intube/CoolProp.jl")
 end

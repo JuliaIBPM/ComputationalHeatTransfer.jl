@@ -6,7 +6,8 @@ export boiling_affect!,nucleateboiling
 # boiling_condition,
 function boiling_condition(u,t,integrator)
     t_to_nondi_t = 3.42e-01
-    t_interval = 0.1 * t_to_nondi_t
+    # t_interval = 0.1 * t_to_nondi_t
+    t_interval = 0.01
     ϵ = 1e-6
 
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
@@ -28,14 +29,15 @@ function boiling_affect!(integrator)
             # println(length(p.liquid.Xp))
             Δθ = getsuperheat(p.wall.Xstations[i],p)
             if Δθ > Δθthreshold
-                println("Boiled!")
+                println("Boiled!",integrator.t)
                 # get the insert pressure.
                 # wallindex = getoneXarrayindex(p.wall.Xstations[i],p.wall.Xarray)
                 # liquidindex = p.mapping.walltoliquid[wallindex]
                 # θinsert = p.liquid.θarrays[liquidindex[1]][liquidindex[2]]
 
                 θinsert = p.mapping.θ_interp_liquidtowall(Xstations[i])
-                Pinsert = θinsert.^(γ/(γ-1))
+                Pinsert = nondi_TtoP.(θinsert)
+                # Pinsert = θinsert.^(γ/(γ-1))
 
                 # println((p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2))
 
@@ -49,7 +51,9 @@ function boiling_affect!(integrator)
     end
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
-    M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+    # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+    M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
+
 
     unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ);liquidθtovec(p.liquid.θarrays)];
 
@@ -73,20 +77,21 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     θarrays = sys.liquid.θarrays
     closedornot = sys.tube.closedornot
 
+
     Lvaporplug =    XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
-    M = P.^(1/γ).* Lvaporplug
+    M = nondi_PtoD.(P) .* Lvaporplug
+    # M = P.^(1/γ).* Lvaporplug
 
     index = getinsertindex(Xp,(Xvapornew[2]+Xvapornew[1])/2,sys.tube.L)
 
 
 
 
-
     # Xvapornew = (1.50,1.60)
     # Pinsert = 1.5
-    ρinsert = Pinsert.^(1/γ)
+    ρinsert = nondi_PtoD(Pinsert)
     Linsert = Xvapornew[end] - Xvapornew[1]
-    Minsert = Pinsert.^(1/γ).* Linsert
+    Minsert = ρinsert .* Linsert
 
     # index = getinsertindex(Xp,Xvapornew)
     δnew = getnewδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot) # mass conservation
@@ -94,7 +99,7 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     Mnew = getnewM(M,index,Minsert,closedornot)
 
     Lvaporplugnew = XptoLvaporplug(Xpnew,L,closedornot)
-    Pnew = (Mnew./Lvaporplugnew).^γ
+    Pnew = nondi_DtoP.(Mnew./Lvaporplugnew)
 
     Xarraysnew = getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
     θarraysnew = getnewθarrays(index,Xp,Xpnew,Xarrays,θarrays,L,closedornot)
