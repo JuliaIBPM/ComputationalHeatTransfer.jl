@@ -18,8 +18,9 @@ duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec # transfer temperature f
 
 function getoneheight(X::Float64,L2D::Float64,angle::Float64)
 
-    Integer(mod(div(X,L2D),2.0)) == 0 ? L2D - mod(X,L2D) : mod(X,L2D)
+    oneheight = Integer(mod(div(X,L2D),2.0)) == 0 ? L2D - mod(X,L2D) : mod(X,L2D)
 
+    return oneheight*sin(angle)
 end
 
 """

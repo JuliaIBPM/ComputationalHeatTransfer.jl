@@ -5,9 +5,9 @@
 export boiling_affect!,nucleateboiling
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_to_nondi_t = 3.42e-01
-    # t_interval = 0.1 * t_to_nondi_t
-    t_interval = 0.01
+    t_to_nondi_t = 2.83E-01
+    t_interval = 0.1 * t_to_nondi_t
+    # t_interval = 0.01
     ϵ = 1e-6
 
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
@@ -17,7 +17,7 @@ end
 
 function boiling_affect!(integrator)
     # println("Boiled!")
-    Δθthreshold = 1e-2# get one for the cavity
+    Δθthreshold = 0.3/295.0# get one for the cavity
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p))
 
@@ -35,8 +35,8 @@ function boiling_affect!(integrator)
                 # liquidindex = p.mapping.walltoliquid[wallindex]
                 # θinsert = p.liquid.θarrays[liquidindex[1]][liquidindex[2]]
 
-                θinsert = p.mapping.θ_interp_liquidtowall(Xstations[i])
-                Pinsert = nondi_TtoP.(θinsert)
+                Pinsert = p.mapping.P_interp_liquidtowall(Xstations[i])
+                θinsert = nondi_PtoT.(Pinsert)
                 # Pinsert = θinsert.^(γ/(γ-1))
 
                 # println((p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2))
@@ -127,8 +127,8 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     # sysnew.mapping = Mapping(walltoliquid,liquidtowall)
 
 
-    θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall = sys_interpolation(sysnew)
-    sysnew.mapping = Mapping(θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall)
+    θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall, P_interp_liquidtowall = sys_interpolation(sysnew)
+    sysnew.mapping = Mapping(θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall, P_interp_liquidtowall)
 
 return sysnew
 end
@@ -275,7 +275,10 @@ end
 function getsuperheat(Xstation,sys)
 
 
-    Δθ = sys.mapping.θ_interp_walltoliquid(Xstation) - sys.mapping.θ_interp_liquidtowall(Xstation)
+    # P = sys.mapping.P_interp_liquidtowall(2.0)
+    # # println(Xstation)
+
+    Δθ = sys.mapping.θ_interp_walltoliquid(Xstation) - nondi_PtoT(sys.mapping.P_interp_liquidtowall(Xstation))
 
     return Δθ
 end
@@ -310,7 +313,7 @@ function suitable_for_boiling(p,i)
         L_vapor_left =  Lvaporplug[index]
         L_vapor_right = (index == index_max) ? Lvaporplug[1] : Lvaporplug[index + 1]
 
-        suitable_flag = (p.tube.d < L_vapor_left) && (p.tube.d < L_vapor_right) ? true : false
+        suitable_flag = (2*p.tube.d < L_vapor_left) && (2*p.tube.d < L_vapor_right) ? true : false
 
 
 

@@ -2,7 +2,7 @@ export merging_affect!,merging_condition,nucleateboiling
 
 function merging_affect!(integrator)
     println("merged!")
-    δv = 0.001
+    δv = integrator.p.tube.d/2
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
     L = p.tube.L;
@@ -45,7 +45,7 @@ end
 
 function merging_condition(u,t,integrator)     # only for closed loop tube
 
-    δv = 0.001
+    δv = integrator.p.tube.d/2
 
     sys = deepcopy(getcurrentsys(integrator.u,integrator.p));
 

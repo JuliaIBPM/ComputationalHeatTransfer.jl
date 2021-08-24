@@ -12,4 +12,6 @@ module OneDOHP
     includet("intube/TimeMarching.jl")
     includet("intube/PostProcessing.jl")
     includet("intube/CoolProp.jl")
+    includet("intube/Plotrecipe.jl")
+    includet("intube/DrawingOHP.jl")
 end

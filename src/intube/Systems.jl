@@ -162,6 +162,7 @@ mutable struct Mapping
     θ_interp_walltoliquid
     θ_interp_liquidtowall
     H_interp_liquidtowall
+    P_interp_liquidtowall
 end
 
 """
