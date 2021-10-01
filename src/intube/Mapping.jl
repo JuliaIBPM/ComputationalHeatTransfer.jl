@@ -199,7 +199,7 @@ function sys_interpolation(sys)
                 append!(X_inner_pres,[sys.liquid.Xarrays[i-1][end], sys.tube.L, 0.0, sys.liquid.Xarrays[i][1]])
                 append!(P_inner,[P[i], P[i], P[i], P[i]])
                 mk = i
-            elseif i == 1 && (sys.liquid.Xarrays[i][1] < sys.liquid.Xarrays[end][end])
+            elseif i == 1 && (sys.liquid.Xarrays[i][1] < sys.liquid.Xarrays[end][end]) 
                 append!(X_inner,[sys.liquid.Xarrays[end][end], sys.tube.L, 0.0, sys.liquid.Xarrays[i][1]])
                 append!(θ_inner,[θ[i], θ[i], θ[i], θ[i]])
                 append!(H_inner,[H_vapor[i], H_vapor[i], H_vapor[i], H_vapor[i]])
@@ -244,6 +244,17 @@ function sys_interpolation(sys)
 
 
                 append!(H_inner,H_liquid .* ones(length(sys.liquid.Xarrays[i]) + 2))
+
+                if i != length(sys.liquid.Xarrays)
+                    append!(X_inner_pres,[sys.liquid.Xarrays[i][1], sys.tube.L, 0.0, sys.liquid.Xarrays[i][end]])
+                    P_inner_end = (sys.tube.L-sys.liquid.Xarrays[i][1])/mod(sys.liquid.Xarrays[i][end]-sys.liquid.Xarrays[i][1],sys.tube.L) * (P[i+1]-P[i]) + P[i]
+                    append!(P_inner,[P[i], P_inner_end, P_inner_end, P[i+1]])
+                elseif i == length(sys.liquid.Xarrays)
+                    append!(X_inner_pres,[sys.liquid.Xarrays[i][1], sys.tube.L, 0.0, sys.liquid.Xarrays[i][end]])
+                    P_inner_end = (sys.tube.L-sys.liquid.Xarrays[i][1])/mod(sys.liquid.Xarrays[i][end]-sys.liquid.Xarrays[i][1],sys.tube.L) * (P[1]-P[i]) + P[i]
+                    append!(P_inner,[P[i], P_inner_end, P_inner_end, P[1]])
+                end
+
             else
                 append!(X_inner,sys.liquid.Xarrays[i])
                 append!(θ_inner,sys.liquid.θarrays[i])
@@ -293,7 +304,7 @@ function sys_interpolation(sys)
 # println(minimum(θ_inner_final))
 # println(θ_inner_final[1])
 
-    # println(X_inner_final)
+    # println(X_inner_pres_final)
 # return X_inner_final
     θ_interp_liquidtowall = LinearInterpolation(X_inner_final, θ_inner_final);
 

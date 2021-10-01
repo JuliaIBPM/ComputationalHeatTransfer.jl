@@ -36,8 +36,7 @@ using RecipesBase
         x2 = x2[1]
         y2 = y2[1]
 
-            y2 -= val.mapping.θ_interp_liquidtowall.(x2) 
-
+        y2 -= nondi_PtoT(val.mapping.P_interp_liquidtowall.(x2))
 
         y2 = y2 .* T0
 
