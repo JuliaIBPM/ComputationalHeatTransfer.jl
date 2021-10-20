@@ -1,66 +1,58 @@
 using RecipesBase
 
-@recipe function f(val::PHPSystem)
+@recipe function f(val::PHPSystem;plottype="T")
 
     T0 = 295.0
     P0 = 220337
 
-    layout := (3,1)
+    # layout := (3,1)
+    if plottype == "T"
 
-    x1,y1 = stackXpTemp(val)
-    @series begin
-        subplot := 1
+            x1,y1 = stackXpTemp(val)
+
+            legend := false
+            color_palette  := :seaborn_dark
+            title := "OHP temperatures"
+            y1 = y1 .* T0
+
+            return x1,y1
+
+    elseif plottype == "ΔT"
+
+            x2,y2 = stackXpTemp(val)
+
+            legend := false
+            color_palette  := :seaborn_dark
+            title := "OHP ΔT"
+
+            x2 = x2[1]
+            y2 = y2[1]
+
+            y2 -= nondi_PtoT(val.mapping.P_interp_liquidtowall.(x2))
+
+            y2 = y2 .* T0
+
+            return x2,y2
 
 
-        legend := false
-        color_palette  := :seaborn_dark
-        title := "OHP temperatures"
-        y1 = y1 .* T0
+    elseif plottype == "P"
 
+            x3,y3 = stackXpTemp(val)
 
+            legend := false
+            color_palette  := :seaborn_dark
+            title := "OHP pressures"
 
-        x1,y1
-    end
+            popfirst!(x3)
+            popfirst!(y3)
 
-    x2,y2 = stackXpTemp(val)
-    @series begin
-        subplot := 2
+            for i = 1:length(y3)
+                y3[i] = val.mapping.P_interp_liquidtowall.(x3[i])
+            end
 
-        legend := false
-        color_palette  := :seaborn_dark
-        title := "OHP dT"
+            y3 = y3 .* P0
 
-        # popfirst!(x2)
-        # popfirst!(y2)
-
-        x2 = x2[1]
-        y2 = y2[1]
-
-        y2 -= nondi_PtoT(val.mapping.P_interp_liquidtowall.(x2))
-
-        y2 = y2 .* T0
-
-        x2,y2
-    end
-
-    x3,y3 = stackXpTemp(val)
-    @series begin
-        subplot := 3
-
-        legend := false
-        color_palette  := :seaborn_dark
-        title := "OHP pressures"
-
-        popfirst!(x3)
-        popfirst!(y3)
-
-        for i = 1:length(y3)
-            y3[i] = val.mapping.P_interp_liquidtowall.(x3[i])
-        end
-
-        y3 = y3 .* P0
-
-        x3,y3
+            return x3,y3
     end
 end
 
@@ -96,7 +88,7 @@ function stackXpTemp(val::PHPSystem)
             push!(all_Xp,[Xpvapor[j][1],Xpvapor[j][end]]); push!(all_θ,[θvapor[j], θvapor[j]])
             else
             push!(all_Xp,[0.0,Xpvapor[j][end]]); push!(all_θ,[θvapor[j], θvapor[j]])
-            push!(all_Xp,[Xpvapor[j][1],L]); push!(all_θ,[θvapor[j], θvapor[j]])
+            push!(all_Xp,[Xpvapor[j][1],val.tube.L]); push!(all_θ,[θvapor[j], θvapor[j]])
         end
 
         j += 1

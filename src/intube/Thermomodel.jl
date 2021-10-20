@@ -215,41 +215,18 @@ function liquidmodel(p::PHPSystem)
 
 
     θarray_temp_wall = zero.(deepcopy(θarrays))
-    # for i = 1:length(θarrays)
-    #
-    #     dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
-    #
-    #     indexes = sys.mapping.liquidtowall[i]
-    #
-    #     for j = 1:length(indexes)
-    #         θarray_temp_wall[i][j] = sys.wall.θarray[indexes[j]]
-    #     end
-    #
-    #     du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* (θarray_temp_wall[i] - θarrays[i]) .* dx
-    # end
 
-    # println(length(θarrays))
 
     for i = 1:length(θarrays)
-        # a, b = Xpvapor[i][1], Xpvapor[i][2];
-        # L_temp    = mod(b-a,sys.tube.L)		   ## note n=10
-        # n = Int64(div(L_temp,dx_wall) == 0 ? 1 : div(L_temp,dx_wall))
-        #
-        #
-        # dx_vapor = (b - a)/n
+
         xs = sys.liquid.Xarrays[i];
         dx = mod(xs[2] - xs[1], sys.tube.L)
-             ## n, right is 1:n * delta
 
         θ_wall_inter = sys.mapping.θ_interp_walltoliquid
 
         fx = map(θ_wall_inter, xs) - θarrays[i]
         du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx .* dx
-        # dMdt[i] = sum(fx) * dx_vapor .* Hₗ
     end
-
-
-
     return du
 end
 

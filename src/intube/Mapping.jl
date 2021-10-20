@@ -199,7 +199,7 @@ function sys_interpolation(sys)
                 append!(X_inner_pres,[sys.liquid.Xarrays[i-1][end], sys.tube.L, 0.0, sys.liquid.Xarrays[i][1]])
                 append!(P_inner,[P[i], P[i], P[i], P[i]])
                 mk = i
-            elseif i == 1 && (sys.liquid.Xarrays[i][1] < sys.liquid.Xarrays[end][end]) 
+            elseif i == 1 && (sys.liquid.Xarrays[i][1] < sys.liquid.Xarrays[end][end])
                 append!(X_inner,[sys.liquid.Xarrays[end][end], sys.tube.L, 0.0, sys.liquid.Xarrays[i][1]])
                 append!(θ_inner,[θ[i], θ[i], θ[i], θ[i]])
                 append!(H_inner,[H_vapor[i], H_vapor[i], H_vapor[i], H_vapor[i]])
@@ -301,16 +301,24 @@ function sys_interpolation(sys)
         append!(P_inner_final,view(P_inner, 1:imin-1))
     end
 
+
+``` extend wall Xarray by adding its 0.0 point```
+extend_wall_Xarray = deepcopy(sys.wall.Xarray)
+extend_wall_θarray = deepcopy(sys.wall.θarray)
+
+prepend!(extend_wall_Xarray,[0.0])
+prepend!(extend_wall_θarray,[sys.wall.θarray[end]])
+
 # println(minimum(θ_inner_final))
 # println(θ_inner_final[1])
 
-    # println(X_inner_pres_final)
+    # println(X_inner_final)
 # return X_inner_final
     θ_interp_liquidtowall = LinearInterpolation(X_inner_final, θ_inner_final);
 
     H_interp_liquidtowall = LinearInterpolation(X_inner_final, H_inner_final);
 
-    θ_interp_walltoliquid = LinearInterpolation(sys.wall.Xarray, sys.wall.θarray);
+    θ_interp_walltoliquid = LinearInterpolation(extend_wall_Xarray, extend_wall_θarray);
 
     P_interp_liquidtowall = LinearInterpolation(X_inner_pres_final, P_inner_final);
 

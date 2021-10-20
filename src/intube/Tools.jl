@@ -463,6 +463,16 @@ function constructXarrays(L::Float64,N,θinitial)
     return(Xwallarray,θwallarray)
 end
 
+function constructXarrays(line::ScalarData{N,Float64,Array{Float64,1}},L,θinitial) where {N}
+    Xwallarray = Array{Float64, 1}(undef, N)
+    Xwallarray .= line./line[end].*L
+
+    θwallarray = deepcopy(Xwallarray)
+    θwallarray = range(θinitial, θinitial, length=N)
+
+    return(Xwallarray,θwallarray)
+end
+
 
 
 """

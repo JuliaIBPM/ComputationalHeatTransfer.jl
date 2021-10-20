@@ -34,7 +34,7 @@ function ODE_innertube(u,p,t)
 
     du = [dynamicsdu;liquiddu]
 
-    # println(length(p.liquid.θarrays))
+    # println(t)
 
     return(du)
 

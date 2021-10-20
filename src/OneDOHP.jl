@@ -14,4 +14,5 @@ module OneDOHP
     includet("intube/CoolProp.jl")
     includet("intube/Plotrecipe.jl")
     includet("intube/DrawingOHP.jl")
+    includet("intube/PreProcessing.jl")
 end

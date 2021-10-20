@@ -127,6 +127,10 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     σ::ScalarData{N,Float64}
     τ::ScalarData{N,Float64}
 
+    # ADI Laplacians
+    DDx
+    DDy
+
 end
 
 function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tuple{Real,Real},ylimits::Tuple{Real,Real}, Δt::Real;
@@ -216,7 +220,7 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
 
     end
 
-
+    DDx,DDy = ADI_laplacian!(NX-1,NY-1)
 
     HeatConduction{NX, NY, N, _motiontype(static_points), problem_side_internal, ddftype, typeof(f), typeof(state_prototype)}(
                           params, bodies, bctype, bodytemps, qforce,
@@ -226,7 +230,7 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
                           g, Δt, # rk,
                           dlc,
                           points, normals, Rc, Ec, Rf, Ef, Cc,
-                          f,state_prototype,Sc,Sb,Vf,gradTf,Vb,gradTb,ΔTs,σ,τ)
+                          f,state_prototype,Sc,Sb,Vf,gradTf,Vb,gradTb,ΔTs,σ,τ,DDx,DDy)
 
 end
 
@@ -518,3 +522,4 @@ include("operators/basicoperators.jl")
 include("operators/surfaceoperators.jl")
 include("operators/movingbodyoperators.jl")
 include("operators/timemarching.jl")
+include("operators/ADIsolver.jl")

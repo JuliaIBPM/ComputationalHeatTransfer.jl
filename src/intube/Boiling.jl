@@ -8,7 +8,7 @@ function boiling_condition(u,t,integrator)
     t_to_nondi_t = 2.83E-01
     t_interval = 0.1 * t_to_nondi_t
     # t_interval = 0.01
-    ϵ = 1e-6
+    ϵ = 1e-5
 
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
     # return mod(t,0.01*t_to_nondi_t)
@@ -17,7 +17,7 @@ end
 
 function boiling_affect!(integrator)
     # println("Boiled!")
-    Δθthreshold = 0.3/295.0# get one for the cavity
+    Δθthreshold = 0.3/295.0
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p))
 
@@ -29,24 +29,22 @@ function boiling_affect!(integrator)
             # println(length(p.liquid.Xp))
             Δθ = getsuperheat(p.wall.Xstations[i],p)
             if Δθ > Δθthreshold
-                println("Boiled!",integrator.t)
-                # get the insert pressure.
-                # wallindex = getoneXarrayindex(p.wall.Xstations[i],p.wall.Xarray)
-                # liquidindex = p.mapping.walltoliquid[wallindex]
-                # θinsert = p.liquid.θarrays[liquidindex[1]][liquidindex[2]]
+                println("Boiled! at ",p.wall.Xstations[i], "on ", integrator.t)
+#
+# ```modified here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!```
+#                 θinsert = p.mapping.θ_interp_walltoliquid.(Xstations[i])
+#                 Pinsert = nondi_TtoP.(θinsert)
 
                 Pinsert = p.mapping.P_interp_liquidtowall(Xstations[i])
                 θinsert = nondi_PtoT.(Pinsert)
-                # Pinsert = θinsert.^(γ/(γ-1))
 
-                # println((p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2))
 
                 p = nucleateboiling(p,(p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2),Pinsert) # P need to be given from energy equation
             end
         end
 
 
-
+        # println(p.vapor.P)
 
     end
 
@@ -93,8 +91,14 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     Linsert = Xvapornew[end] - Xvapornew[1]
     Minsert = ρinsert .* Linsert
 
-    # index = getinsertindex(Xp,Xvapornew)
-    δnew = getnewδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot) # mass conservation
+
+
+    """let's do constant film thickness for now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"""
+    δnew = insert!(δ,index+1,δ[index])
+    # δnew = getnewδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot) # mass conservation
+
+
+
     Xpnew = getnewXp(Xp,index,Xvapornew,closedornot)
     Mnew = getnewM(M,index,Minsert,closedornot)
 
