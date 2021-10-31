@@ -24,6 +24,7 @@ mutable struct Tube
     L::Float64
     L2D::Float64
     angle::Float64
+    ΔTthres::Float64
     closedornot::Bool
 end
 

@@ -7,7 +7,14 @@ function randomXp(L;numofslugs=32,chargeratio=0.46)
     L_perslug=L/numofslugs*chargeratio
     L_persection=L/numofslugs
 
-    Ls = (randn(numofslugs)/4 .+ 1).*L_perslug
+    # Ls = (randn(numofslugs)/4 .+ 1).*L_perslug
+    if chargeratio <= 0.5
+        Ls = 2*rand(numofslugs).*L_perslug
+    else
+        Ls = ((2*chargeratio-1) .+ rand(numofslugs).*(2-2*chargeratio)).*L_persection
+    end
+# rand(numofslugs)
+    # println(chargeratio)
 
     Xp1s = zeros(numofslugs);
     Xp2s = deepcopy(Xp1s);

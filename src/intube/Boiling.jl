@@ -8,16 +8,25 @@ function boiling_condition(u,t,integrator)
     t_to_nondi_t = 2.83E-01
     t_interval = 0.1 * t_to_nondi_t
     # t_interval = 0.01
-    ϵ = 1e-5
+    ϵ = 1e-6
 
+    # println(t)
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
     # return mod(t,0.01*t_to_nondi_t)
     # mod(t,t_interval) - ϵ
 end
 
 function boiling_affect!(integrator)
-    # println("Boiled!")
-    Δθthreshold = 0.3/295.0
+
+    Δθthreshold = integrator.p.tube.ΔTthres
+    t_to_nondi_t = 2.83E-01
+    """
+    modified here!!!!!!!!!!!!!!!!!!!
+    """
+
+# println("Boiled at " ,integrator.t/t_to_nondi_t)
+    # *0.1 """modified here!!!!!!!!!!!!!!!!!!!""" modified here!!!!!!!!!!!!!!!!!!!```
+
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p))
 
@@ -29,7 +38,7 @@ function boiling_affect!(integrator)
             # println(length(p.liquid.Xp))
             Δθ = getsuperheat(p.wall.Xstations[i],p)
             if Δθ > Δθthreshold
-                println("Boiled! at ",p.wall.Xstations[i], "on ", integrator.t)
+                println("Boiled! at ",p.wall.Xstations[i], " on ", integrator.t/t_to_nondi_t)
 #
 # ```modified here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!```
 #                 θinsert = p.mapping.θ_interp_walltoliquid.(Xstations[i])
@@ -100,10 +109,12 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
 
 
     Xpnew = getnewXp(Xp,index,Xvapornew,closedornot)
-    Mnew = getnewM(M,index,Minsert,closedornot)
+    # Mnew = getnewM(M,index,Minsert,closedornot)
+    #
+    # Lvaporplugnew = XptoLvaporplug(Xpnew,L,closedornot)
+    # Pnew = nondi_DtoP.(Mnew./Lvaporplugnew)
 
-    Lvaporplugnew = XptoLvaporplug(Xpnew,L,closedornot)
-    Pnew = nondi_DtoP.(Mnew./Lvaporplugnew)
+    Pnew = insert!(P,index+1,Pinsert)
 
     Xarraysnew = getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
     θarraysnew = getnewθarrays(index,Xp,Xpnew,Xarrays,θarrays,L,closedornot)
