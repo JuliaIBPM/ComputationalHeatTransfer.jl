@@ -12,6 +12,7 @@ using Revise
 
 cd(dirname(pwd()))
 cd("src")
+println(pwd())
 includet("OneDOHP.jl")
 using ..OneDOHP
 
