@@ -9,11 +9,11 @@ using Revise
 # using Interpolations
 # using JLD2
 
+divider = Sys.iswindows() ? "\\" : "/"
 
 cd(dirname(pwd()))
 cd("src")
-println(pwd())
-includet("OneDOHP.jl")
+includet(pwd()*divider*"OneDOHP.jl")
 using ..OneDOHP
 
 using Test
