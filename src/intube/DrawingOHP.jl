@@ -20,7 +20,7 @@ function construct_oneloop_curve(x0,y0,ds,length,gap,angle)
     xi,yi = _semi_circle(xt1,yt2,xt1,yt1,ds)
     append!(x,xi);append!(y,yi)
 
-    x,y
+    x , y, x[1], y[1]
 end
 
 function _straight_line(x1,y1,x2,y2,ds)

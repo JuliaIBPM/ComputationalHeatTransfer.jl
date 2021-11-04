@@ -141,67 +141,67 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
 end
 
 
-function wallmodel(p::PHPSystem)
-    sys = deepcopy(p)
-
-    θarray = deepcopy(sys.wall.θarray)
-    du = zero(deepcopy(θarray))
-
-    γ = sys.vapor.γ
-    Hₗ = sys.liquid.Hₗ
-    # He = sys.evaporator.He
-    Hδ = sys.vapor.Hδ
-    δ = sys.vapor.δ
-    Hvapor = Hδ ./ δ
-
-    dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
-
-    Xarray = sys.wall.Xarray
-    Wearray = getwallWearray(Xarray,sys)
-
-    Hwc = sys.condenser.Hwc
-    θc  = sys.condenser.θc
-    Xc  = sys.condenser.Xc
-    hevisidec=ifamong.(Xarray,[Xc])
-
-    H = zero(deepcopy(θarray))
-    θarray_temp_flow = zero(deepcopy(θarray))
-
-        for i = 1:length(θarray)
-
-            index = sys.mapping.walltoliquid[i]
-
-            if index[2] == -1
-
-                if sys.tube.closedornot == false
-                    P = sys.vapor.P[index[1]]
-                end
-
-
-                if sys.tube.closedornot == true
-                    if index[1] > length(sys.vapor.P)
-                        P = sys.vapor.P[index[1]-length(sys.vapor.P)]
-                    else
-                        P = sys.vapor.P[index[1]]
-                    end
-                end
-
-
-                θarray_temp_flow[i] = nondi_PtoT.(P)
-
-                H[i] = Hvapor[index[1]]
-            else
-                θliquidarrays = sys.liquid.θarrays
-                θarray_temp_flow[i] = θliquidarrays[index[1]][index[2]]
-
-                H[i] = Hₗ
-            end
-        end
-
-
-        du = sys.wall.α .* laplacian(θarray,sys.tube.closedornot) ./ dx ./ dx + H .* (θarray_temp_flow - θarray) .* dx + Wearray .* dx + hevisidec .* Hwc .* (θc .- θarray) .* dx
-        return du
-end
+# function wallmodel(p::PHPSystem)
+#     sys = deepcopy(p)
+#
+#     θarray = deepcopy(sys.wall.θarray)
+#     du = zero(deepcopy(θarray))
+#
+#     γ = sys.vapor.γ
+#     Hₗ = sys.liquid.Hₗ
+#     # He = sys.evaporator.He
+#     Hδ = sys.vapor.Hδ
+#     δ = sys.vapor.δ
+#     Hvapor = Hδ ./ δ
+#
+#     dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+#
+#     Xarray = sys.wall.Xarray
+#     Wearray = getwallWearray(Xarray,sys)
+#
+#     Hwc = sys.condenser.Hwc
+#     θc  = sys.condenser.θc
+#     Xc  = sys.condenser.Xc
+#     hevisidec=ifamong.(Xarray,[Xc])
+#
+#     H = zero(deepcopy(θarray))
+#     θarray_temp_flow = zero(deepcopy(θarray))
+#
+#         for i = 1:length(θarray)
+#
+#             index = sys.mapping.walltoliquid[i]
+#
+#             if index[2] == -1
+#
+#                 if sys.tube.closedornot == false
+#                     P = sys.vapor.P[index[1]]
+#                 end
+#
+#
+#                 if sys.tube.closedornot == true
+#                     if index[1] > length(sys.vapor.P)
+#                         P = sys.vapor.P[index[1]-length(sys.vapor.P)]
+#                     else
+#                         P = sys.vapor.P[index[1]]
+#                     end
+#                 end
+#
+#
+#                 θarray_temp_flow[i] = nondi_PtoT.(P)
+#
+#                 H[i] = Hvapor[index[1]]
+#             else
+#                 θliquidarrays = sys.liquid.θarrays
+#                 θarray_temp_flow[i] = θliquidarrays[index[1]][index[2]]
+#
+#                 H[i] = Hₗ
+#             end
+#         end
+#
+#
+#         du = sys.wall.α .* laplacian(θarray,sys.tube.closedornot) ./ dx ./ dx + H .* (θarray_temp_flow - θarray) .* dx + Wearray .* dx + hevisidec .* Hwc .* (θc .- θarray) .* dx
+#         return du
+# end
 
 function liquidmodel(p::PHPSystem)
     sys = deepcopy(p)
@@ -225,7 +225,7 @@ function liquidmodel(p::PHPSystem)
         θ_wall_inter = sys.mapping.θ_interp_walltoliquid
 
         fx = map(θ_wall_inter, xs) - θarrays[i]
-        du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx .* dx
+        du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx
     end
     return du
 end
