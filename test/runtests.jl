@@ -1,20 +1,16 @@
-# Pkg.clone("https://github.com/CoolProp/CoolProp.jl.git")
-# Pkg.build("CoolProp")
-
-# using ComputationalHeatTransfer
-# using LaTeXStrings
+using ComputationalHeatTransfer
+using LaTeXStrings
 using Revise
-# using LinearAlgebra
-# using DifferentialEquations
-# using Interpolations
-# using JLD2
+using LinearAlgebra
+using DifferentialEquations
+using Interpolations
+using JLD2
 
 divider = Sys.iswindows() ? "\\" : "/"
-
 cd(dirname(pwd()))
 cd("src")
 includet(pwd()*divider*"OneDOHP.jl")
-using ..OneDOHP
+using .OneDOHP
 
 using Test
 
