@@ -1,19 +1,19 @@
 # Pkg.clone("https://github.com/CoolProp/CoolProp.jl.git")
 # Pkg.build("CoolProp")
 
-using ComputationalHeatTransfer
-using LaTeXStrings
-using Revise
-using LinearAlgebra
-using DifferentialEquations
-using Interpolations
-using JLD2
+# using ComputationalHeatTransfer
+# using LaTeXStrings
+# using Revise
+# using LinearAlgebra
+# using DifferentialEquations
+# using Interpolations
+# using JLD2
 
-# 
-# cd(dirname(pwd()))
-# cd("src")
-# includet("OneDOHP.jl")
-# using ..OneDOHP
+
+cd(dirname(pwd()))
+cd("src")
+includet("OneDOHP.jl")
+using ..OneDOHP
 
 using Test
 
