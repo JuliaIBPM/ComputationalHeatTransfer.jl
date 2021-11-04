@@ -3,7 +3,7 @@
 
 # using ComputationalHeatTransfer
 # using LaTeXStrings
-# using Revise
+using Revise
 # using LinearAlgebra
 # using DifferentialEquations
 # using Interpolations
