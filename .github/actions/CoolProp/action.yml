@@ -1,0 +1,19 @@
+name: 'Run Pkg.add to CoolProp'
+description: 'Run Pkg.add to CoolProp'
+author: 'Yuxuan Li'
+
+branding:
+  icon: 'box'
+  color: 'gray-dark'
+
+inputs:
+  project:
+    description: 'Value passed to the --project flag. The default value is the repository root: "@."'
+    default: '@.'
+
+runs:
+  using: 'composite'
+  steps:
+
+  - run: julia --color=yes --project=${{ inputs.project }} -e 'using Pkg; Pkg.add("https://github.com/CoolProp/CoolProp.jl.git"); end'
+    shell: bash
