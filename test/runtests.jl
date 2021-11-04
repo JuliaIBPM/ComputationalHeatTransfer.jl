@@ -1,4 +1,17 @@
 using ComputationalHeatTransfer
+using LaTeXStrings
+using Revise
+using LinearAlgebra
+using DifferentialEquations
+using Interpolations
+using JLD2
+
+
+cd(dirname(pwd()))
+cd("src")
+includet("OneDOHP.jl")
+using ..OneDOHP
+
 using Test
 
 @testset "trigonometric identities" begin
