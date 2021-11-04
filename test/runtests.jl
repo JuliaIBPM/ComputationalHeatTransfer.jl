@@ -1,3 +1,6 @@
+Pkg.clone("https://github.com/CoolProp/CoolProp.jl.git")
+Pkg.build("CoolProp")
+
 using ComputationalHeatTransfer
 using LaTeXStrings
 using Revise
