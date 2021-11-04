@@ -9,11 +9,11 @@ using DifferentialEquations
 using Interpolations
 using JLD2
 
-
-cd(dirname(pwd()))
-cd("src")
-includet("OneDOHP.jl")
-using ..OneDOHP
+# 
+# cd(dirname(pwd()))
+# cd("src")
+# includet("OneDOHP.jl")
+# using ..OneDOHP
 
 using Test
 
