@@ -15,5 +15,5 @@ runs:
   using: 'composite'
   steps:
 
-  - run: julia --color=yes --project=${{ inputs.project }} -e 'using Pkg; Pkg.add("https://github.com/CoolProp/CoolProp.jl.git"); end'
+  - run: julia --color=yes --project=${{ inputs.project }} -e 'using Pkg; Pkg.add("https://github.com/CoolProp/CoolProp.jl.git")'
     shell: bash
