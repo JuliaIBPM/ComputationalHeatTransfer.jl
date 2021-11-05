@@ -186,8 +186,8 @@ N=numpts(ohp)
 Xarrays,θarrays = constructXarrays(X0,N,θinitial,L)
 liquids=Liquid(Htₗ_OHP,ρ,ω,℘L,X0,dXdt0,Xarrays,θarrays);
 
-
-realratio
+# 
+# realratio
 
 # P = [1.0,1.0,1.0,1.0,1.0]; # closed end
 
