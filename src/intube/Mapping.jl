@@ -309,6 +309,8 @@ extend_wall_θarray = deepcopy(sys.wall.θarray)
 prepend!(extend_wall_Xarray,[0.0])
 prepend!(extend_wall_θarray,[sys.wall.θarray[end]])
 
+# println(length(extend_wall_Xarray))
+# println(length(extend_wall_θarray))
 # println(minimum(θ_inner_final))
 # println(θ_inner_final[1])
 

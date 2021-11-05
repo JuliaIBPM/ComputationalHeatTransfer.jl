@@ -206,6 +206,7 @@ end
 function liquidmodel(p::PHPSystem)
     sys = deepcopy(p)
     θarrays = sys.liquid.θarrays
+    nondihv_tonondihl = 0.0046206704347650325 # temperary variable to fix different nondimensionlaization
 
     du = zero.(deepcopy(θarrays))
 
@@ -225,7 +226,7 @@ function liquidmodel(p::PHPSystem)
         θ_wall_inter = sys.mapping.θ_interp_walltoliquid
 
         fx = map(θ_wall_inter, xs) - θarrays[i]
-        du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx
+        du[i] = sys.wall.α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx .* nondihv_tonondihl
     end
     return du
 end

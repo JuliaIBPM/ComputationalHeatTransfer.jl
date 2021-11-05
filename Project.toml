@@ -24,8 +24,6 @@ RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 RigidBodyTools = "befc5f09-81d5-499c-a4b2-d0464ba9f9c8"
-Static = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
