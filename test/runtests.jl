@@ -186,7 +186,7 @@ N=numpts(ohp)
 Xarrays,θarrays = constructXarrays(X0,N,θinitial,L)
 liquids=Liquid(Htₗ_OHP,ρ,ω,℘L,X0,dXdt0,Xarrays,θarrays);
 
-# 
+#
 # realratio
 
 # P = [1.0,1.0,1.0,1.0,1.0]; # closed end
@@ -369,7 +369,7 @@ for i = 1:length(sysfinal)-1
     Verification_Thist[i+1] = (maximum(sysfinal[i].liquid.θarrays[1]) * Tᵥ)
 end
 
-@test norm(Verification_Thist - Thist_refₗ,Inf) ≈ 0
+@test norm(Verification_Thist - Thist_refₗ,Inf) < 1e-4
 
 
 end;
