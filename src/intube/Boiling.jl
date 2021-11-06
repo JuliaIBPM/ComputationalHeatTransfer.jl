@@ -89,7 +89,7 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     M = nondi_PtoD.(P) .* Lvaporplug
     # M = P.^(1/γ).* Lvaporplug
 
-    index = getinsertindex(Xp,(Xvapornew[2]+Xvapornew[1])/2,sys.tube.L)
+    index = getinsertindex(Xp,(Xvapornew[2]+Xvapornew[1])/2,sys.tube.L,sys.tube.closedornot)
 
 
 
@@ -213,7 +213,7 @@ function getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
 end
 
 
-function getinsertindex(Xp,Xvapornew_center,L)
+function getinsertindex(Xp,Xvapornew_center,L,closedornot)
 
 if !closedornot
     for index = 1:length(Xp)
@@ -322,7 +322,7 @@ function suitable_for_boiling(p,i)
     index_max = length(p.liquid.Xp)
 
 
-        index = getinsertindex(p.liquid.Xp,p.wall.Xstations[i],p.tube.L)
+        index = getinsertindex(p.liquid.Xp,p.wall.Xstations[i],p.tube.L,p.tube.closedornot)
         Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
 
         L_vapor_left =  Lvaporplug[index]
