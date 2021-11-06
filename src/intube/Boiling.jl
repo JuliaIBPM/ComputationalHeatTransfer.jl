@@ -5,10 +5,10 @@
 export boiling_affect!,nucleateboiling
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_to_nondi_t = 2.83E-01
+    t_to_nondi_t = 0.2831486159429433
     t_interval = 0.1 * t_to_nondi_t
     # t_interval = 0.01
-    ϵ = 1e-6
+    ϵ = 1e-5
 
     # println(t)
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
@@ -19,7 +19,7 @@ end
 function boiling_affect!(integrator)
 
     Δθthreshold = integrator.p.tube.ΔTthres
-    t_to_nondi_t = 2.83E-01
+    t_to_nondi_t = 0.2831486159429433
     """
     modified here!!!!!!!!!!!!!!!!!!!
     """
