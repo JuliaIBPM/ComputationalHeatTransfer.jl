@@ -182,10 +182,11 @@ function sys_interpolation(sys)
     X_inner_pres  = Array{Float64}(undef, 0)
     P_inner = Array{Float64}(undef, 0)
     mk = 0
-    θ = nondi_PtoT.(sys.vapor.P)
+    θ = PtoT.(sys.vapor.P)
+    # θ = nondi_PtoT.(sys.vapor.P)
     P = sys.vapor.P
     # θ = real.((sys.vapor.P .+ 0im).^((sys.vapor.γ-1)/sys.vapor.γ)) # isentropic
-    H_vapor = sys.vapor.Hδ ./ sys.vapor.δ
+    H_vapor = sys.vapor.k ./ sys.vapor.δ
     H_liquid = sys.liquid.Hₗ
 
 
@@ -234,6 +235,7 @@ function sys_interpolation(sys)
                 Xarrays_temp = deepcopy(sys.liquid.Xarrays[i])
                 θarrays_temp = deepcopy(sys.liquid.θarrays[i])
 
+                # println(sys.liquid.Xarrays[i][1],"\n",sys.liquid.Xarrays[i][end],"\n",length(sys.liquid.θarrays[i]))
 
                 insert!(Xarrays_temp,period_index, sys.tube.L)
                 insert!(Xarrays_temp,period_index+1, 0.0)
@@ -309,6 +311,9 @@ extend_wall_θarray = deepcopy(sys.wall.θarray)
 prepend!(extend_wall_Xarray,[0.0])
 prepend!(extend_wall_θarray,[sys.wall.θarray[end]])
 
+append!(extend_wall_Xarray,[sys.tube.L])
+append!(extend_wall_θarray,[sys.wall.θarray[end]])
+
 # println(length(extend_wall_Xarray))
 # println(length(extend_wall_θarray))
 # println(minimum(θ_inner_final))
@@ -335,10 +340,11 @@ function test_interpolation(sys)
     X_inner_pres  = Array{Float64}(undef, 0)
     P_inner = Array{Float64}(undef, 0)
     mk = 0
-    θ = nondi_PtoT.(sys.vapor.P)
+    # θ = nondi_PtoT.(sys.vapor.P)
+    θ = PtoT.(sys.vapor.P)
     P = sys.vapor.P
     # θ = real.((sys.vapor.P .+ 0im).^((sys.vapor.γ-1)/sys.vapor.γ)) # isentropic
-    H_vapor = sys.vapor.Hδ ./ sys.vapor.δ
+    H_vapor = sys.vapor.k ./ sys.vapor.δ
     H_liquid = sys.liquid.Hₗ
 
 

@@ -21,55 +21,14 @@ PHPSystem is a struct containing
 
 mutable struct Tube
     d::Float64
+    peri::Float64
+    Ac::Float64
     L::Float64
     L2D::Float64
     angle::Float64
-    ΔTthres::Float64
+    g::Float64
     closedornot::Bool
 end
-
-"""
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
-"""
-
-mutable struct Evaporator
-    # He::Float64
-    # θe::Float64
-    Xe::Array{Tuple{Float64,Float64},1}
-    We::Array{Float64,1}
-end
-
-"""
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
-"""
-
-mutable struct Condenser
-    # Hc::Float64
-    θc::Float64
-    Xc::Array{Tuple{Float64,Float64},1}
-    Hwc::Float64
-end
-
 """
 PHPSystem is a struct containing
     γ
@@ -85,11 +44,11 @@ PHPSystem is a struct containing
 """
 
 mutable struct Liquid
-    # γ::Float64
     Hₗ::Float64
     ρ::Float64
-    ω::Float64
-    ℘L::Float64
+    Cp::Float64
+    α::Float64
+    μₗ::Float64
     Xp::Array{Tuple{Float64,Float64},1}
     dXdt::Array{Tuple{Float64,Float64},1}
     Xarrays::Array{Array{Float64,1},1}
@@ -112,8 +71,8 @@ PHPSystem is a struct containing
 """
 
 mutable struct Vapor
-    γ::Float64
-    Hδ::Float64
+    # γ::Float64
+    k::Float64
     P::Array{Float64,1}
     δ::Array{Float64,1}
 end
@@ -133,8 +92,8 @@ PHPSystem is a struct containing
 """
 
 mutable struct Wall
-    α::Float64
-    Δt::Float64
+    # α::Float64
+    ΔTthres::Float64
     Xstations::Array{Float64,1}
     Xarray::Array{Float64,1}
     θarray::Array{Float64,1}
@@ -182,8 +141,8 @@ PHPSystem is a struct containing
 # add type names!
 mutable struct PHPSystem
     tube::Tube
-    evaporator::Evaporator
-    condenser::Condenser
+    # evaporator::Evaporator
+    # condenser::Condenser
     liquid::Liquid
     vapor::Vapor
     wall::Wall
@@ -193,8 +152,8 @@ end
 
 mutable struct PHPSystem_nomapping
     tube::Tube
-    evaporator::Evaporator
-    condenser::Condenser
+    # evaporator::Evaporator
+    # condenser::Condenser
     liquid::Liquid
     vapor::Vapor
     wall::Wall

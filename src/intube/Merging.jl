@@ -34,7 +34,10 @@ function merging_affect!(integrator)
 
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
-    M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
+    # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
+
+    Ac = p.tube.Ac
+    M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac
     # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
 
     unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); liquidθtovec(p.liquid.θarrays)];
@@ -98,8 +101,11 @@ function merging(p,i)
 
 
     Nliquid = (i != 1) ? length([systemp.liquid.Xarrays[i-1]; systemp.liquid.Xarrays[i]]) : length([systemp.liquid.Xarrays[end]; systemp.liquid.Xarrays[i]])
-    Xarraysnewone = constructoneXarray([(i != 1) ? systemp.liquid.Xp[i-1] : systemp.liquid.Xp[end]],Nliquid,0.0,p.tube.L)[1][1]
+    Nliquid -= 2
+    
+    Xarraysnewone = constructoneXarray((i != 1) ? systemp.liquid.Xp[i-1] : systemp.liquid.Xp[end],Nliquid,p.tube.L)
 
+    # println(Nliquid)
 
     splice!(systemp.liquid.Xarrays,i);
     (i != 1) ? splice!(systemp.liquid.Xarrays,i-1) : splice!(systemp.liquid.Xarrays,length(systemp.liquid.Xarrays));

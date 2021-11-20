@@ -5,12 +5,17 @@
 export boiling_affect!,nucleateboiling
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_to_nondi_t = 0.2831486159429433
-    t_interval = 0.1 * t_to_nondi_t
-    # t_interval = 0.01
+    # t_to_nondi_t = 0.2831486159429433
+    # t_interval = 0.1 * t_to_nondi_t
+
+    t_interval = 0.1
+
     ϵ = 1e-5
 
+
     # println(t)
+    # println((abs(mod(t,t_interval)-t_interval) < ϵ))
+    # println(mod(t,t_interval) < ϵ)
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
     # return mod(t,0.01*t_to_nondi_t)
     # mod(t,t_interval) - ϵ
@@ -18,11 +23,11 @@ end
 
 function boiling_affect!(integrator)
 
-    Δθthreshold = integrator.p.tube.ΔTthres
-    t_to_nondi_t = 0.2831486159429433
-    """
-    modified here!!!!!!!!!!!!!!!!!!!
-    """
+    Δθthreshold = integrator.p.wall.ΔTthres
+    # t_to_nondi_t = 0.2831486159429433
+    # """
+    # modified here!!!!!!!!!!!!!!!!!!!
+    # """
 
 # println("Boiled at " ,integrator.t/t_to_nondi_t)
     # *0.1 """modified here!!!!!!!!!!!!!!!!!!!""" modified here!!!!!!!!!!!!!!!!!!!```
@@ -32,20 +37,24 @@ function boiling_affect!(integrator)
 
     for i = 1:length(p.wall.Xstations)
 
-        if ifamong(p.wall.Xstations[i], p.liquid.Xp) && suitable_for_boiling(p,i)
+        if ifamong(p.wall.Xstations[i], p.liquid.Xp, p.tube.L) && suitable_for_boiling(p,i)
+
+                    # println(ifamong(p.wall.Xstations[i], p.liquid.Xp) && suitable_for_boiling(p,i))
 
             # println(p.wall.Xstations[i])
             # println(length(p.liquid.Xp))
             Δθ = getsuperheat(p.wall.Xstations[i],p)
+            # println(Δθ)
             if Δθ > Δθthreshold
-                println("Boiled! at ",p.wall.Xstations[i], " on ", integrator.t/t_to_nondi_t)
-#
+                # println("Boiled! at ",p.wall.Xstations[i], " on ", integrator.t/t_to_nondi_t)
+                println("Boiled! on ",p.wall.Xstations[i], " at ", integrator.t)#
 # ```modified here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!```
 #                 θinsert = p.mapping.θ_interp_walltoliquid.(Xstations[i])
 #                 Pinsert = nondi_TtoP.(θinsert)
 
                 Pinsert = p.mapping.P_interp_liquidtowall(Xstations[i])
-                θinsert = nondi_PtoT.(Pinsert)
+                # θinsert = nondi_PtoT.(Pinsert)
+                θinsert = PtoT.(Pinsert)
 
 
                 p = nucleateboiling(p,(p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2),Pinsert) # P need to be given from energy equation
@@ -59,7 +68,9 @@ function boiling_affect!(integrator)
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
-    M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
+    # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
+    Ac = p.tube.Ac
+    M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac
 
 
     unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ);liquidθtovec(p.liquid.θarrays)];
@@ -79,14 +90,17 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     δ = deepcopy(sys.vapor.δ)
     P = deepcopy(sys.vapor.P)
     L = sys.tube.L
-    γ = sys.vapor.γ
+    Ac = sys.tube.Ac
+    # γ = sys.vapor.γ
     Xarrays = sys.liquid.Xarrays
     θarrays = sys.liquid.θarrays
     closedornot = sys.tube.closedornot
 
 
     Lvaporplug =    XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
-    M = nondi_PtoD.(P) .* Lvaporplug
+
+    M = PtoD.(P) .* Lvaporplug .* Ac
+    # M = nondi_PtoD.(P) .* Lvaporplug
     # M = P.^(1/γ).* Lvaporplug
 
     index = getinsertindex(Xp,(Xvapornew[2]+Xvapornew[1])/2,sys.tube.L,sys.tube.closedornot)
@@ -96,7 +110,9 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
 
     # Xvapornew = (1.50,1.60)
     # Pinsert = 1.5
-    ρinsert = nondi_PtoD(Pinsert)
+    # ρinsert = nondi_PtoD(Pinsert)
+    ρinsert = PtoD(Pinsert)
+
     Linsert = Xvapornew[end] - Xvapornew[1]
     Minsert = ρinsert .* Linsert
 
@@ -138,7 +154,7 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     sysnew.vapor.δ = δnew
 
     # walltoliquid,liquidtowall = constructmapping(sysnew.liquid.Xarrays ,sysnew.wall.Xarray, sysnew.tube.closedornot, sysnew.tube.L)
-    # # print(typeof(walltoliquid),"\n",typeof(walltoliquid),"\n")
+    # print(Xarraysnew[5],"\n",θarraysnew[5],"\n")
     # sysnew.mapping = Mapping(walltoliquid,liquidtowall)
 
 
@@ -148,33 +164,33 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
 return sysnew
 end
 
-
-function getnewδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot)
-    Linsert = Xvapornew[end] - Xvapornew[1]
-
-    crossAfilms = getcrossAδ.([d],δ)
-    insertcrossA = (closedornot && index == length(crossAfilms)) ?  0.5(crossAfilms[index] + crossAfilms[1]) - Minsert/ρ/Linsert : 0.5(crossAfilms[index] + crossAfilms[index+1]) - Minsert/ρ/Linsert
-    insert!(crossAfilms,index+1,insertcrossA)
-
-    δnew = crossAtoδ.([d],crossAfilms)
-end
-
-function getnewMδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot)
-
-end
-
-
-function crossAtoδ(d,crossA)
-    C = crossA # nondimensional area
-    δ = 1 - sqrt(1-C)
-end
-
-
-function getcrossAδ(d,δ)
-    crossAouter = 1
-    crossAinner = (1-δ)^2
-    crossAδ     = crossAouter - crossAinner
-end
+#
+# function getnewδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot)
+#     Linsert = Xvapornew[end] - Xvapornew[1]
+#
+#     crossAfilms = getcrossAδ.([d],δ)
+#     insertcrossA = (closedornot && index == length(crossAfilms)) ?  0.5(crossAfilms[index] + crossAfilms[1]) - Minsert/ρ/Linsert : 0.5(crossAfilms[index] + crossAfilms[index+1]) - Minsert/ρ/Linsert
+#     insert!(crossAfilms,index+1,insertcrossA)
+#
+#     δnew = crossAtoδ.([d],crossAfilms)
+# end
+#
+# function getnewMδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot)
+#
+# end
+#
+#
+# function crossAtoδ(d,crossA)
+#     C = crossA # nondimensional area
+#     δ = 1 - sqrt(1-C)
+# end
+#
+#
+# function getcrossAδ(d,δ)
+#     crossAouter = 1
+#     crossAinner = (1-δ)^2
+#     crossAδ     = crossAouter - crossAinner
+# end
 
 
 
@@ -187,8 +203,8 @@ end
     append!(θarraysnewleft, θarrays[index][arrayindex])
 
     θarraysnewright= θarrays[index][arrayindex+1:end]
-    insert!(θarraysnewleft, 1, θarrays[index][arrayindex])
-    insert!(θarraysnewleft, 1, θarrays[index][arrayindex])
+    insert!(θarraysnewright, 1, θarrays[index][arrayindex])
+    insert!(θarraysnewright, 1, θarrays[index][arrayindex])
 
 
     splice!(θarraysnew, index)
@@ -204,8 +220,11 @@ function getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
     # println(Xpnew[index][2])
     # println(Xarrays[index])
 
-    Xarraysnewleft = LinRange(Xpnew[index][1],Xpnew[index][2],arrayindex+1)
-    Xarraysnewright= LinRange(Xpnew[index+1][1],Xpnew[index+1][2],length(Xarrays[index])-arrayindex+2)
+    # Xarraysnewleft = LinRange(Xpnew[index][1],Xpnew[index][2],arrayindex+1)
+    # Xarraysnewright= LinRange(Xpnew[index+1][1],Xpnew[index+1][2],length(Xarrays[index])-arrayindex+2)
+
+    Xarraysnewleft = constructoneXarray(Xpnew[index],arrayindex+1,L)
+    Xarraysnewright = constructoneXarray(Xpnew[index+1],length(Xarrays[index])-arrayindex+2,L)
 
     splice!(Xarraysnew, index)
     insert!(Xarraysnew, index,Xarraysnewleft)
@@ -293,8 +312,8 @@ function getsuperheat(Xstation,sys)
     # P = sys.mapping.P_interp_liquidtowall(2.0)
     # # println(Xstation)
 
-    Δθ = sys.mapping.θ_interp_walltoliquid(Xstation) - nondi_PtoT(sys.mapping.P_interp_liquidtowall(Xstation))
-
+    # Δθ = sys.mapping.θ_interp_walltoliquid(Xstation) - nondi_PtoT(sys.mapping.P_interp_liquidtowall(Xstation))
+    Δθ = sys.mapping.θ_interp_walltoliquid(Xstation) - PtoT(sys.mapping.P_interp_liquidtowall(Xstation))
     return Δθ
 end
 

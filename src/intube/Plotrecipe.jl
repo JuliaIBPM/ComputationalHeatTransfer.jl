@@ -2,8 +2,8 @@ using RecipesBase
 
 @recipe function f(val::PHPSystem;plottype="T")
 
-    T0 = 295.0
-    P0 = 220337
+    # T0 = 295.0
+    # P0 = 220337
 
     # layout := (3,1)
     if plottype == "T"
@@ -13,7 +13,7 @@ using RecipesBase
             legend := false
             color_palette  := :seaborn_dark
             title := "OHP temperatures"
-            y1 = y1 .* T0
+            # y1 = y1 .* T0
 
             return x1,y1
 
@@ -28,9 +28,11 @@ using RecipesBase
             x2 = x2[1]
             y2 = y2[1]
 
-            y2 -= nondi_PtoT(val.mapping.P_interp_liquidtowall.(x2))
+            y2 -= PtoT(val.mapping.P_interp_liquidtowall.(x2))
 
-            y2 = y2 .* T0
+            # y2 -= nondi_PtoT(val.mapping.P_interp_liquidtowall.(x2))
+
+            # y2 = y2 .* T0
 
             return x2,y2
 
@@ -50,7 +52,7 @@ using RecipesBase
                 y3[i] = val.mapping.P_interp_liquidtowall.(x3[i])
             end
 
-            y3 = y3 .* P0
+            # y3 = y3 .* P0
 
             return x3,y3
     end
@@ -58,7 +60,8 @@ end
 
 function stackXpTemp(val::PHPSystem)
     Xpvapor = getXpvapor(val.liquid.Xp,val.tube.L,val.tube.closedornot)
-    θvapor  = nondi_PtoT.(val.vapor.P)
+    # θvapor  = nondi_PtoT.(val.vapor.P)
+    θvapor  = PtoT.(val.vapor.P)
     Xp = val.liquid.Xp
 
     all_θ  = []
