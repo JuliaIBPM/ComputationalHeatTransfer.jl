@@ -102,6 +102,9 @@ end
 
 @inline _heatconduction_rhs_double_layer_adiabatic!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,0},bctype) where {NX,NY} = dT
 
+@inline _heatconduction_rhs_double_layer_adiabatic!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,0},::Type{AdiabaticBC}) where {NX,NY} = dT
+
+
 @inline _heatconduction_rhs_double_layer_adiabatic!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys::HeatConduction{NX,NY,N},bctype) where {NX,NY,N} = dT
 
 
