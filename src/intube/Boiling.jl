@@ -57,7 +57,7 @@ function boiling_affect!(integrator)
                 θinsert = PtoT.(Pinsert)
 
 
-                p = nucleateboiling(p,(p.wall.Xstations[i]-p.tube.d/2,p.wall.Xstations[i]+p.tube.d/2),Pinsert) # P need to be given from energy equation
+                p = nucleateboiling(p,(p.wall.Xstations[i]-p.tube.d,p.wall.Xstations[i]+p.tube.d),Pinsert) # P need to be given from energy equation
             end
         end
 
@@ -200,11 +200,11 @@ end
     arrayindex = getarrayindex(Xpnew[index][2],Xarrays[index])
 
     θarraysnewleft = θarrays[index][1:arrayindex]
-    append!(θarraysnewleft, θarrays[index][arrayindex])
+    # append!(θarraysnewleft, θarrays[index][arrayindex])
 
     θarraysnewright= θarrays[index][arrayindex+1:end]
     insert!(θarraysnewright, 1, θarrays[index][arrayindex])
-    insert!(θarraysnewright, 1, θarrays[index][arrayindex])
+    # insert!(θarraysnewright, 1, θarrays[index][arrayindex])
 
 
     splice!(θarraysnew, index)
@@ -223,8 +223,8 @@ function getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
     # Xarraysnewleft = LinRange(Xpnew[index][1],Xpnew[index][2],arrayindex+1)
     # Xarraysnewright= LinRange(Xpnew[index+1][1],Xpnew[index+1][2],length(Xarrays[index])-arrayindex+2)
 
-    Xarraysnewleft = constructoneXarray(Xpnew[index],arrayindex+1,L)
-    Xarraysnewright = constructoneXarray(Xpnew[index+1],length(Xarrays[index])-arrayindex+2,L)
+    Xarraysnewleft = constructoneXarray(Xpnew[index],arrayindex,L)
+    Xarraysnewright = constructoneXarray(Xpnew[index+1],length(Xarrays[index])-arrayindex+1,L)
 
     splice!(Xarraysnew, index)
     insert!(Xarraysnew, index,Xarraysnewleft)
@@ -354,7 +354,7 @@ function suitable_for_boiling(p,i)
         L_liquid_left =  mod(p.wall.Xstations[i] - p.liquid.Xp[index][1],p.tube.L)
         L_liquid_right = mod(p.liquid.Xp[index][2] - p.wall.Xstations[i],p.tube.L)
 
-        if (10*p.tube.d > L_liquid_left) || (10*p.tube.d > L_liquid_right)
+        if (5*p.tube.d > L_liquid_left) || (5*p.tube.d > L_liquid_right)
             suitable_flag = false
         end
 

@@ -37,16 +37,17 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
 
 
-
+    ρₗ = p.liquid.ρ
 # get differential equation factors
-    lhs = ρ*Ac .* Lliquidslug
+    lhs = ρₗ*Ac .* Lliquidslug
 
     rhs_press = Ac ./ lhs
 
     dXdt_to_stress = -8*μₗ/d
     rhs_dXdt = peri .* Lliquidslug .* dXdt_to_stress ./ lhs
 
-    rhs_g = Ac*ρ*g*cos(angle) ./ lhs
+
+    rhs_g = Ac*ρₗ*g*cos(angle) ./ lhs
 
 
     # P = nondi_DtoP.(M./Lvaporplug)
@@ -85,6 +86,8 @@ if p.tube.closedornot == true
                 du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1])
             end
             # use ℘L and ω for now, in the future change them to one value rather than a array.
+                # println("du ", du[2*numofliquidslug + 2*i-1])
+                # println("friction force ",  rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] * lhs)
             du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
 
         end
@@ -105,6 +108,7 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
 
     # get Hvapor
     peri = sys.tube.peri
+    Ac = sys.tube.Ac
     k = sys.vapor.k
     δ = sys.vapor.δ
     Hvapor = k ./ δ
@@ -113,13 +117,18 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
     P = sys.vapor.P
     # γ = sys.vapor.γ
 
+    θarrays = sys.liquid.θarrays
+    Xarrays = sys.liquid.Xarrays
+
     θ = PtoT.(P)
     # θ = nondi_PtoT.(P)
     # θ = real.((P .+ 0im).^((γ-1)/γ)) # isentropic
 
     Hfg = PtoHfg.(P)
 
-    # println(Hfg)
+    # modified here
+    # Hfg = Hfg*1e-3
+    # println(P)
 
     dx_wall = sys.wall.Xarray[2]-sys.wall.Xarray[1]
 
@@ -136,9 +145,19 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
 
         fx = map(θ_wall_inter, xs) .- θ[i]
         # println(maximum(fx))
-        dMdt[i] = (sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i])
 
-        # println(dMdt[i])
+        slope_r = getslope(θarrays[i][2],θarrays[i][1],Xarrays[i][2],Xarrays[i][1])
+        slope_l = (i == 1) ? getslope(θarrays[1][end],θarrays[1][end-1],Xarrays[1][end],Xarrays[1][end-1]) : getslope(θarrays[i-1][end],θarrays[i-1][end-1],Xarrays[i-1][end],Xarrays[i-1][end-1])
+
+        # slope_r = 21.95530408719068
+        # slope_l = -21.95530408719068
+
+        axial_rhs = Ac*k*(slope_r-slope_l) /Hfg[i]
+
+        dMdt[i] = (sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]) + axial_rhs
+
+        # println(axial_rhs)
+        # println((sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]))
     end
 
     # for i = 1:length(Xpvapor)
@@ -175,6 +194,8 @@ function liquidmodel(p::PHPSystem)
 
     for i = 1:length(θarrays)
 
+        Ttuple = getadjacentT(p,i)
+
         xs = sys.liquid.Xarrays[i];
         dx = mod(xs[2] - xs[1], sys.tube.L)
 
@@ -182,10 +203,31 @@ function liquidmodel(p::PHPSystem)
 
         fx = map(θ_wall_inter, xs) - θarrays[i]
         du[i] = α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx .* H_rhs
+
+        # same temperature B.C.
+        du[i][1] = (Ttuple[1]-θarrays[i][1])/tstep
+        du[i][end] = (Ttuple[end]-θarrays[i][end])/tstep
+
+        # # adiabatic temperature B.C.
+        # du[i][1] += (θarrays[i][1]-θarrays[i][1])/tstep
+        # du[i][end] += (Ttuple[end]-θarrays[i][end])/tstep
+
+        # println(du[i][1])
     end
     return du
 end
 
+function getadjacentT(p::PHPSystem,i::Int64)
+    Tfirst = PtoT(p.vapor.P[i])
+
+    if p.tube.closedornot == true
+        Tlast = i >= length(p.vapor.P) ? PtoT(p.vapor.P[1]) : PtoT(p.vapor.P[i+1])
+    else
+        Tlast = PtoT(p.vapor.P[i+1])
+    end
+
+    (Tfirst,Tlast)
+end
 
 # """
 #     (Depreciated)
@@ -218,33 +260,54 @@ end
 """
 
 
-function laplacian(u,periodic=true)
+function laplacian(u)
     unew = deepcopy(u)
 
     dl = ones(length(u)-1)
     dr = dl
     d  = -2*ones(length(u))
+    d[1] = -1
+    d[end]= -1
 
     A = Tridiagonal(dl, d, dr)
 
     unew = A*u
 
-    #periodic B.C.
-    if periodic
-
-        unew[1]   = u[2] - 2*u[1] + u[end]
-
-        unew[end] = u[1] - 2*u[end] + u[end-1]
-
-    else
+    # #periodic B.C.
+    # if periodic
+    #
+    #     unew[1]   = u[2] - 2*u[1] + u[end]
+    #
+    #     unew[end] = u[1] - 2*u[end] + u[end-1]
+    #
+    # else
 
     # zero gradient B.C.
-    unew[1]   = unew[2]
-    unew[end] = unew[end-1]
-    end
+    # unew[1]   = 0.0
+    # unew[end] = 0.0
+    # end
 
     return (unew)
 end
+#
+# function laplacian(u,Ttuple)
+#     unew = deepcopy(u)
+#
+#     dl = ones(length(u)-1)
+#     dr = dl
+#     d  = -2*ones(length(u))
+#
+#     A = Tridiagonal(dl, d, dr)
+#
+#     unew = A*u
+#     # zero gradient B.C.
+#     unew[1]   = (Ttuple[1]-u[1])*tstep
+#     unew[end] = (Ttuple[end]-u[end])*tstep
+#     # end
+#
+#     return (unew)
+# end
+
 
 
 # q'
@@ -312,3 +375,5 @@ end
 function integrator_to_Harray(inte)
     sys_to_Harray(inte.p)
 end
+
+getslope(y2,y1,x2,x1) = (y2-y1)/(x2-x1)

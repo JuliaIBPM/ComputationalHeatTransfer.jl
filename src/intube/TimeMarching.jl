@@ -22,8 +22,6 @@ function ODE_innertube(u,p,t)
     # walldu = duwallθtovec(wallmodel(newsys))
     # walldu = duwallθtovec(duwalltemp)
 
-
-
     # for i = 1:length(indexes)-2
     # push!(θarraystemp, u[indexes[i+1]+1:indexes[i+2]-1])
     # end

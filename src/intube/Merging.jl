@@ -2,9 +2,10 @@ export merging_affect!,merging_condition,nucleateboiling
 
 function merging_affect!(integrator)
     println("merged!")
-    δv = integrator.p.tube.d/2
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
+    δv = p.tube.d > (integrator.dt*maximum(p.liquid.dXdt)[1]) ? p.tube.d : (integrator.dt*maximum(p.liquid.dXdt)[1])
+    # println(δv)
     L = p.tube.L;
 
     merge_flags = getmerge_flags(δv,p)
@@ -48,7 +49,8 @@ end
 
 function merging_condition(u,t,integrator)     # only for closed loop tube
 
-    δv = integrator.p.tube.d/2
+    p = deepcopy(getcurrentsys(integrator.u,integrator.p));
+    δv = p.tube.d > (integrator.dt*maximum(p.liquid.dXdt)[1]) ? p.tube.d : (integrator.dt*maximum(p.liquid.dXdt)[1])
 
     sys = deepcopy(getcurrentsys(integrator.u,integrator.p));
 
@@ -97,27 +99,30 @@ function merging(p,i)
 
     # N = (i != 1) ? length([sys.liquid.Xarrays[i-1]; sys.liquid.Xarrays[i]]) : length([sys.liquid.Xarrays[end]; sys.liquid.Xarrays[i]])
 
-    N = length(p.wall.Xarray)
+    # N = length(p.wall.Xarray)
 
 
-    Nliquid = (i != 1) ? length([systemp.liquid.Xarrays[i-1]; systemp.liquid.Xarrays[i]]) : length([systemp.liquid.Xarrays[end]; systemp.liquid.Xarrays[i]])
-    Nliquid -= 2
-    
-    Xarraysnewone = constructoneXarray((i != 1) ? systemp.liquid.Xp[i-1] : systemp.liquid.Xp[end],Nliquid,p.tube.L)
+    Nliquids = (i != 1) ? length([systemp.liquid.Xarrays[i-1]; systemp.liquid.Xarrays[i]]) : length([systemp.liquid.Xarrays[end]; systemp.liquid.Xarrays[i]])
+    # Nliquid = Nliquid - 1
 
+    Xarraysnewone = constructoneXarray((i != 1) ? systemp.liquid.Xp[i-1] : systemp.liquid.Xp[end],Nliquids-1,p.tube.L)
+
+    # println(length(Xarraysnewone))
     # println(Nliquid)
+    # println(length(systemp.liquid.Xarrays[i]))
+    # println( (i != 1) ? length(systemp.liquid.Xarrays[i-1]) : length(systemp.liquid.Xarrays[end]))
 
     splice!(systemp.liquid.Xarrays,i);
     (i != 1) ? splice!(systemp.liquid.Xarrays,i-1) : splice!(systemp.liquid.Xarrays,length(systemp.liquid.Xarrays));
     (i != 1) ? insert!(systemp.liquid.Xarrays,i-1,Xarraysnewone) : insert!(systemp.liquid.Xarrays,i,Xarraysnewone);
 
-    θarraysnewone = (i != 1) ? [p.liquid.θarrays[i-1]; p.liquid.θarrays[i]] : [p.liquid.θarrays[end]; p.liquid.θarrays[i]]
+    θarraysnewone = (i != 1) ? [p.liquid.θarrays[i-1][1:end-1]; (p.liquid.θarrays[i-1][end]+p.liquid.θarrays[i][1])/2 ;p.liquid.θarrays[i][2:end]] : [p.liquid.θarrays[end]; (p.liquid.θarrays[end][end]+p.liquid.θarrays[i][1]) / 2 ;p.liquid.θarrays[i]]
     splice!(systemp.liquid.θarrays,i);
     (i != 1) ? splice!(systemp.liquid.θarrays,i-1) : splice!(systemp.liquid.θarrays,length(systemp.liquid.θarrays));
     (i != 1) ? insert!(systemp.liquid.θarrays,i-1,θarraysnewone) : insert!(systemp.liquid.θarrays,i,θarraysnewone);
 
 
-    return systemp
+    return deepcopy(systemp)
 end
 
 function getmerge_flags(δv,sys)

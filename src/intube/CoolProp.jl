@@ -16,6 +16,9 @@ Hᵥrange = CoolProp.PropsSI.("H","T",Trange,"Q",1.0,fluid_type);
 Hₗrange = CoolProp.PropsSI.("H","T",Trange,"Q",0.0,fluid_type);
 Hfgrange = Hᵥrange .- Hₗrange
 
+# # modified
+# Hfgrange = Hfgrange .* 0.01
+
 
 T0=295.0;
 D0=CoolProp.PropsSI("D","T",T0,"Q",1.0,fluid_type);
