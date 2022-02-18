@@ -39,9 +39,13 @@ function getcurrentsys(u,sys0)
 
     Ac = sysnew.tube.Ac
 
-    P = DtoP.(M ./ Lvaporplug ./ Ac)
 
-        # println(PtoT(P))
+    d = sys0.tube.d
+    ρ = M ./ Lvaporplug ./ (Ac .* ((d .- 2δ) ./ d).^2 )
+    P = DtoP.(ρ)
+    # P = DtoP.(M ./ Lvaporplug ./ Ac)
+
+        # println(P)
     # P = nondi_DtoP.(M./Lvaporplug)
     # P = real.((M./Lvaporplug .+ 0im).^(γ))
     sysnew.vapor.P = P

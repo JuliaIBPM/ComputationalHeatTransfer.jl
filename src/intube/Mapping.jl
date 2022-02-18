@@ -11,7 +11,8 @@ function sys_interpolation(sys)
     # θ = nondi_PtoT.(sys.vapor.P)
     P = sys.vapor.P
     # θ = real.((sys.vapor.P .+ 0im).^((sys.vapor.γ-1)/sys.vapor.γ)) # isentropic
-    H_vapor = sys.vapor.k ./ sys.vapor.δ
+    # H_vapor = sys.vapor.k ./ sys.vapor.δ
+    H_vapor = Hfilm.(sys.vapor.δ,[sys])
     H_liquid = sys.liquid.Hₗ
 
 

@@ -72,7 +72,9 @@ PHPSystem is a struct containing
 
 mutable struct Vapor
     # γ::Float64
+    Hᵥ::Float64
     k::Float64
+    δmin::Float64
     P::Array{Float64,1}
     δ::Array{Float64,1}
 end

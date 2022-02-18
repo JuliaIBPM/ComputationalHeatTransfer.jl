@@ -31,9 +31,13 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     Xpvapor = getXpvapor(Xp,sys.tube.L,sys.tube.closedornot)
 
 
-    ρ = M ./ Lvaporplug ./ Ac
+    ρ = M ./ Lvaporplug ./ (Ac .* ((d .- 2δ) ./ d).^2 )
     P = DtoP.(ρ)
     θ = PtoT.(P)
+    #
+    # println(M)
+    # println(ρ)
+    # println(P)
 
 
 
@@ -55,6 +59,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     # P = real.((M./Lvaporplug .+ 0im).^(γ))
     # θ = real.((P .+ 0im).^((γ-1)/γ))
 
+    # Prescribed pressure fields
+
 
     if p.tube.closedornot == false
 
@@ -67,9 +73,12 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
     end
 
+
+    dMdt = dMdtdynamicsmodel(Xpvapor,sys)
+    dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
 # not sure which one is better
-    du[4*numofliquidslug+1:5*numofliquidslug+1] .= dMdtdynamicsmodel(Xpvapor,sys)
-    du[5*numofliquidslug+2:end] .= [0.0]
+    du[4*numofliquidslug+1:5*numofliquidslug+1] .= dMdt
+    du[5*numofliquidslug+2:end] .= dδdt
 
     return du
     end
@@ -85,6 +94,17 @@ if p.tube.closedornot == true
             else
                 du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1])
             end
+
+            # Prescribed pressure difference
+
+            # Δp = 1e3
+            #
+            # if i != numofliquidslug
+            #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * Δp
+            # else
+            #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * Δp
+            # end
+
             # use ℘L and ω for now, in the future change them to one value rather than a array.
                 # println("du ", du[2*numofliquidslug + 2*i-1])
                 # println("friction force ",  rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] * lhs)
@@ -93,8 +113,25 @@ if p.tube.closedornot == true
         end
 
     # not sure which one is better
-        du[4*numofliquidslug+1:5*numofliquidslug] .= dMdtdynamicsmodel(Xpvapor,sys)
-        du[5*numofliquidslug+1:end] .= [0.0] # equals to 0 for now
+        # dMdt = 0
+
+        # du[4*numofliquidslug+1:5*numofliquidslug] .= dMdtdynamicsmodel(Xpvapor,sys) *0.0
+        dMdt = dMdtdynamicsmodel(Xpvapor,sys)
+        dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
+
+        # ρ = M ./ Lvaporplug ./ (Ac .* ((d .- 2δ) ./ d).^2 )
+        # P = DtoP.(ρ)
+
+        δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
+        M1 = δarea .* Lvaporplug .* ρₗ
+        M2 = ρ .* (Ac .- δarea) .* Lvaporplug
+        # println(ρ)
+        # println(M1)
+        # println(M2)
+        # println(M1+M2)
+
+        du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt
+        du[5*numofliquidslug+1:end] .= dδdt # equals to 0 for now
 
         return du
 end
@@ -111,7 +148,8 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
     Ac = sys.tube.Ac
     k = sys.vapor.k
     δ = sys.vapor.δ
-    Hvapor = k ./ δ
+    # Hvapor = k ./ δ
+    Hvapor = Hfilm.(δ,[sys])
 
     #get θ
     P = sys.vapor.P

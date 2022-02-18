@@ -70,7 +70,9 @@ function boiling_affect!(integrator)
     # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
     # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
     Ac = p.tube.Ac
-    M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac
+    δ = p.vapor.δ
+    d = p.tube.d
+    M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac .* ((d .- 2 .* δ) ./ d) .^2
 
 
     unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ);liquidθtovec(p.liquid.θarrays)];
@@ -99,7 +101,7 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
 
     Lvaporplug =    XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
 
-    M = PtoD.(P) .* Lvaporplug .* Ac
+    M = PtoD.(P) .* Lvaporplug .* Ac  .* ((d .- 2 .* δ) ./ d) .^2
     # M = nondi_PtoD.(P) .* Lvaporplug
     # M = P.^(1/γ).* Lvaporplug
 

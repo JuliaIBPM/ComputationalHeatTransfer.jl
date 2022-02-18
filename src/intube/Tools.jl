@@ -4,7 +4,8 @@ export getheight, # get actrual height of the tube
 XMtovec,XMδtovec,vectoXM,vectoXMδ, # transfer Xp,dXdt,M,δ to the state vector
 XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors, length of liquids, and Xp for vapor.
 ifamongone,ifamong,constructXarrays,
-duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec # transfer temperature field to state vector for liquid and wall.
+duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
+Hfilm
 
 # using ..Systems
 # using LinearAlgebra
@@ -493,3 +494,38 @@ end
 function wallθtovec(θwall)
     return [-1e10; θwall]
 end
+
+function Hfilm(δfilm,sys)
+    δmin = sys.vapor.δmin;
+    kₗ   = sys.vapor.k
+    Hᵥ  = sys.vapor.Hᵥ
+    return δfilm > δmin ? kₗ/δfilm : Hᵥ + δfilm*(kₗ/δmin - Hᵥ)/δmin
+end
+
+# function getvaporHarray(xs,oneδratio,Hf,Hv,L)
+#     oneLvapor = mod.(xs[end]-xs[1],L)
+#     half_film_L = 0.5*oneδratio*oneLvapor
+#     x_interpolate = Float64[]
+#     H_interpolate = Float64[]
+
+
+#     if xs[end] > xs[1]
+#         x_interpolate = [xs[1],xs[1]+half_film_L,xs[1]+half_film_L,xs[end]-half_film_L,xs[end]-half_film_L,xs[end]]
+#         H_interpolate = [Hf,Hf,Hv,Hv,Hf,Hf]
+#     elseif (xs[1]+half_film_L < L) && (xs[end]-half_film_L > 0.0)
+#         x_interpolate = [0.0,xs[end]-half_film_L,xs[end]-half_film_L,xs[end],xs[1],xs[1]+half_film_L,xs[1]+half_film_L,L]
+#         H_interpolate = [Hv,Hv,Hf,Hf,Hf,Hf,Hv,Hv]
+#     elseif (xs[1]+half_film_L > L) && (xs[end]-half_film_L > 0.0)
+#         x_interpolate = [0.0,mod(xs[1]+half_film_L,L),mod(xs[1]+half_film_L,L),xs[end]-half_film_L,xs[end]-half_film_L,xs[end],xs[1],L]
+#         H_interpolate = [Hf,Hf,Hv,Hv,Hf,Hf,Hf,Hf]
+#     else
+#         x_interpolate = [0.0,xs[end],xs[1],xs[1]+half_film_L,xs[1]+half_film_L,mod(xs[end]-half_film_L,L),mod(xs[end]-half_film_L,L),L]
+#         H_interpolate = [Hf,Hf,Hf,Hf,Hv,Hv,Hf,Hf]
+#     end
+
+# #             println(x_interpolate)
+
+#     H_interpolation = LinearInterpolation(x_interpolate, H_interpolate);
+
+#     H_interpolation
+# end

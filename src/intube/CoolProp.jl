@@ -8,7 +8,7 @@ fluid_type = "Butane"
 Tcrit = CoolProp.PropsSI("Tcrit",fluid_type);
 Tmin = CoolProp.PropsSI("Tmin",fluid_type);
 
-Trange = LinRange(Tmin, Tcrit, 1000)
+Trange = LinRange(Tmin, Tcrit, 10000)
 Prange = CoolProp.PropsSI.("P","T",Trange,"Q",1.0,fluid_type);
 Drange = CoolProp.PropsSI.("D","T",Trange,"Q",1.0,fluid_type);
 
