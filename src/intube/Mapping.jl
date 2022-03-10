@@ -15,7 +15,8 @@ function sys_interpolation(sys)
     H_vapor = Hfilm.(sys.vapor.δ,[sys])
     H_liquid = sys.liquid.Hₗ
 
-
+    # println(sys.liquid.Xarrays[1][1])
+    # println(sys.liquid.Xarrays[end][end])
     for i = 1:length(sys.liquid.Xarrays)
 
             if i != 1 && (sys.liquid.Xarrays[i][1] < sys.liquid.Xarrays[i-1][end])
@@ -152,10 +153,16 @@ append!(extend_wall_θarray,[sys.wall.θarray[end]])
 #     X_test[i] = X_inner_final[i+1] - X_inner_final[i]
 # end
 #     println(findmin(X_test))
-# println(X_inner_final[end-5:end])
-    # println(length(X_test))
-    # println(X_inner_final[4195:4210])
-    # println(θ_inner_final[4195:4210])
+# # # println(X_inner_final[end-5:end])
+# #     # println(length(X_test))
+# #     # println(X_inner_final[242:249])
+# #     # println(θ_inner_final[242:249])
+#     println(X_inner_final[1330:1335])
+#     println(sys.liquid.Xp)
+#     println(sys.liquid.dXdt)
+    # println(X_inner_final[end-10:end])
+    # println(θ_inner_final[end-10:end])
+    # plot(X_inner_final[242:249])
 # return X_inner_final
     θ_interp_liquidtowall = LinearInterpolation(X_inner_final, θ_inner_final);
 
