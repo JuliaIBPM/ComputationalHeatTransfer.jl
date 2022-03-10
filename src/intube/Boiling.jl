@@ -115,23 +115,33 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     # ρinsert = nondi_PtoD(Pinsert)
     ρinsert = PtoD(Pinsert)
 
-    Linsert = Xvapornew[end] - Xvapornew[1]
-    Minsert = ρinsert .* Linsert
+    Linsert = mod(Xvapornew[end] - Xvapornew[1],L)
+    Mvaporinsert = ρinsert .* Linsert .* Ac  .* ((d .- 2 .* δ[index]) ./ d) .^2
 
 
 
     """let's do constant film thickness for now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"""
     δnew = insert!(δ,index+1,δ[index])
     # δnew = getnewδ(δ,index,Xvapornew,ρ,d,Minsert,closedornot) # mass conservation
+    δarea = getδarea(Ac,d,δ[index])
+    Mfilminsert = ρ.*δarea.*Linsert
 
+    Minsert = Mfilminsert + Mvaporinsert
 
+    left_index = index
+    right_index = index < length(sys.vapor.δ) ? index+1 : 1
 
-    Xpnew = getnewXp(Xp,index,Xvapornew,closedornot)
+    Mperlength_left = getMperlength(sys,left_index)
+    Mperlength_right = getMperlength(sys,right_index)
+
+    Lliquid_adjust = (Minsert - Mperlength_left*Linsert/2 - Mperlength_right*Linsert/2) / (ρ*Ac - Mperlength_left/2 - Mperlength_right/2)
+    # Xpnew =
     # Mnew = getnewM(M,index,Minsert,closedornot)
     #
     # Lvaporplugnew = XptoLvaporplug(Xpnew,L,closedornot)
     # Pnew = nondi_DtoP.(Mnew./Lvaporplugnew)
 
+    Xpnew = getnewXp(Xp,index,Xvapornew,Lliquid_adjust,L,closedornot)
     Pnew = insert!(P,index+1,Pinsert)
 
     Xarraysnew = getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
@@ -270,14 +280,14 @@ end
         return NaN
 end
 
-function getnewXp(Xp,index,Xvapornew,closedornot)
+function getnewXp(Xp,index,Xvapornew,Lliquid_adjust,L,closedornot)
 
     Xpnew = deepcopy(Xp)
 
-    Linsert = Xvapornew[end] - Xvapornew[1]
+    Linsert = mod(Xvapornew[end] - Xvapornew[1],L)
 
-    insertXp1=(Xp[index][1]-Linsert/2,Xvapornew[1])
-    insertXp2=(Xvapornew[2],Xp[index][2]+Linsert/2)
+    insertXp1=mod.((Xp[index][1]-Linsert/2+Lliquid_adjust/2,Xvapornew[1]),L)
+    insertXp2=mod.((Xvapornew[2],Xp[index][2]+Linsert/2-Lliquid_adjust/2),L)
 
     splice!(Xpnew, index)
     insert!(Xpnew, index,insertXp1)
