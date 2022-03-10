@@ -5,7 +5,8 @@ XMtovec,XMδtovec,vectoXM,vectoXMδ, # transfer Xp,dXdt,M,δ to the state vector
 XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors, length of liquids, and Xp for vapor.
 ifamongone,ifamong,constructXarrays,
 duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
-Hfilm
+Hfilm,getδarea,getMvapor,getMfilm,getMliquid,
+getMperlength,getMshortenedfilm,getMshortenedvapor
 
 # using ..Systems
 # using LinearAlgebra
@@ -340,6 +341,31 @@ function getXpvapor(Xp,L,closedornot)
     return Xpvapor
 end
 
+# function getdXdtvapor(Xp,L,closedornot)
+#
+#     Xpvapor=deepcopy(Xp)
+#
+#     if closedornot == false
+#         Xpvapor[1]=(0.0,Xp[1][1])
+#
+#         for i = 2:(length(Xp))
+#             Xpvapor[i]=(Xp[i-1][end],Xp[i][1])
+#         end
+#
+#         push!(Xpvapor,(Xp[end][end],L))
+#     end
+#
+#     if closedornot == true
+#         Xpvapor[1]=(Xp[end][end],Xp[1][1])
+#
+#         for i = 2:(length(Xp))
+#             Xpvapor[i]=(Xp[i-1][end],Xp[i][1])
+#         end
+#     end
+#
+#     return dXdt
+# end
+
 #
 # """
 #     This is a general sub-function of ifamong to determine if the value is in the range
@@ -502,6 +528,155 @@ function Hfilm(δfilm,sys)
     return δfilm > δmin ? kₗ/δfilm : Hᵥ + δfilm*(kₗ/δmin - Hᵥ)/δmin
 end
 
+function getδarea(Ac,d,δ)
+    δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
+
+    δarea
+end
+
+function getMvapor(sys)
+
+    ρᵥ = PtoD.(sys.vapor.P)
+    Ac = sys.tube.Ac
+    δ = sys.vapor.δ
+
+    Xp = sys.liquid.Xp
+    L = sys.tube.L
+    d = sys.tube.d
+    closedornot = sys.tube.closedornot
+
+    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
+    δarea = getδarea(Ac,d,δ)
+
+    Mvapor = ρᵥ .* (Ac .- δarea) .* Lvaporplug
+
+    Mvapor
+end
+
+function getMfilm(sys)
+
+    ρᵥ = PtoD.(sys.vapor.P)
+    Ac = sys.tube.Ac
+    δ = sys.vapor.δ
+
+    ρₗ = sys.liquid.ρ
+    Xp = sys.liquid.Xp
+    L = sys.tube.L
+    d = sys.tube.d
+    closedornot = sys.tube.closedornot
+
+    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
+    δarea = getδarea(Ac,d,δ)
+
+    Mfilm =δarea .* Lvaporplug .* ρₗ
+
+    Mfilm
+end
+
+function getMliquid(sys)
+
+    ρᵥ = PtoD.(sys.vapor.P)
+    Ac = sys.tube.Ac
+    δ = sys.vapor.δ
+
+    ρₗ = sys.liquid.ρ
+    Xp = sys.liquid.Xp
+    L = sys.tube.L
+    d = sys.tube.d
+    closedornot = sys.tube.closedornot
+
+    Lliquidslug = XptoLliquidslug(Xp,L)
+#     δarea = getδarea(Ac,d,δ)
+
+    Mliquid = ρₗ .* Ac .* Lliquidslug
+
+    Mliquid
+end
+
+function getMperlength(sys,i)
+
+#    for vapor and its film
+
+    Xp = sys.liquid.Xp
+    L = sys.tube.L
+
+    closedornot = sys.tube.closedornot
+
+
+    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
+    Mfilm = getMfilm(sys)
+    Mvapor = getMvapor(sys)
+
+    M_per_length = (Mfilm+Mvapor) ./ Lvaporplug
+
+    M_per_length[i]
+end
+
+function getMshortenedfilm(sys,i)
+
+#     ρᵥ = PtoD.(sys.vapor.P)
+#     Ac = sys.tube.Ac
+#     δ = sys.vapor.δ
+
+#     ρₗ = sys.liquid.ρ
+    Xp = sys.liquid.Xp
+    L = sys.tube.L
+#     d = sys.tube.d
+    closedornot = sys.tube.closedornot
+
+#     Lliquidslug = XptoLliquidslug(Xp,L)
+# #     δarea = getδarea(Ac,d,δ)
+
+    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
+    Mfilm = getMfilm(sys)
+    Mvapor = getMvapor(sys)
+
+    M_per_length = (Mfilm) ./ Lvaporplug
+
+#     println(Mfilm)
+#     println(Mvapor)
+#     println(M_per_length)
+#     println(Lvaporplug)
+
+
+    left_index = i > 1 ? i-1 : length(Mfilm)
+    right_index = i < length(Mfilm) ? i+1 : 1
+
+    Mshortenedfilm = M_per_length[left_index] * (Lvaporplug[i]/2) + M_per_length[right_index] * (Lvaporplug[i]/2)
+end
+
+function getMshortenedvapor(sys,i)
+
+#     ρᵥ = PtoD.(sys.vapor.P)
+#     Ac = sys.tube.Ac
+#     δ = sys.vapor.δ
+
+#     ρₗ = sys.liquid.ρ
+    Xp = sys.liquid.Xp
+    L = sys.tube.L
+#     d = sys.tube.d
+    closedornot = sys.tube.closedornot
+
+#     Lliquidslug = XptoLliquidslug(Xp,L)
+# #     δarea = getδarea(Ac,d,δ)
+
+    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
+    Mfilm = getMfilm(sys)
+    Mvapor = getMvapor(sys)
+
+    M_per_length = (Mvapor) ./ Lvaporplug
+
+#     println(Mfilm)
+#     println(Mvapor)
+#     println(M_per_length)
+#     println(Lvaporplug)
+
+
+    left_index = i > 1 ? i-1 : length(Mfilm)
+    right_index = i < length(Mfilm) ? i+1 : 1
+
+    Mshortenedvapor = M_per_length[left_index] * (Lvaporplug[i]/2) + M_per_length[right_index] * (Lvaporplug[i]/2)
+end
 # function getvaporHarray(xs,oneδratio,Hf,Hv,L)
 #     oneLvapor = mod.(xs[end]-xs[1],L)
 #     half_film_L = 0.5*oneδratio*oneLvapor
