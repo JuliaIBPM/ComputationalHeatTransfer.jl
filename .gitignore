@@ -24,3 +24,4 @@ docs/build/
 notebooks/Untitled.ipynb
 OHP_blue_gold.gif
 src\tmp.gif
+*.svg
