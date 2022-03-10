@@ -49,6 +49,7 @@ mutable struct Liquid
     Cp::Float64
     α::Float64
     μₗ::Float64
+    σ::Float64
     Xp::Array{Tuple{Float64,Float64},1}
     dXdt::Array{Tuple{Float64,Float64},1}
     Xarrays::Array{Array{Float64,1},1}
