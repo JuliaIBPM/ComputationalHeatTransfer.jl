@@ -23,6 +23,13 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     angle = sys.tube.angle
     g = sys.tube.g
 
+    δ = sys.vapor.δ
+    δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
+    dXdt_factor =  Ac ./ (Ac .- δarea)
+
+    # println(sys.liquid.Xp)
+    # println(sys.liquid.dXdt)
+
     μₗ = sys.liquid.μₗ
 
     Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
@@ -54,6 +61,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     rhs_g = Ac*ρₗ*g*cos(angle) ./ lhs
 
 
+
     # P = nondi_DtoP.(M./Lvaporplug)
     # θ = nondi_PtoT.(P)
     # P = real.((M./Lvaporplug .+ 0im).^(γ))
@@ -76,6 +84,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
     dMdt = dMdtdynamicsmodel(Xpvapor,sys)
     dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
+    # dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)*0.0
 # not sure which one is better
     du[4*numofliquidslug+1:5*numofliquidslug+1] .= dMdt
     du[5*numofliquidslug+2:end] .= dδdt
@@ -86,8 +95,17 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 if p.tube.closedornot == true
 
         for i = 1:numofliquidslug
-            du[2*i-1] = u[2*numofliquidslug+2*i-1]
-            du[2*i] = du[2*i-1]
+            # du[2*i-1] = u[2*numofliquidslug+2*i-1]
+            # du[2*i] = du[2*i-1]
+
+            # println(u[2*numofliquidslug+2*i-1])
+            # println(u[2*numofliquidslug+2*i-1] * dXdt_factor[i])
+            # println(dXdt_factor[i])
+
+            du[2*i-1] = u[2*numofliquidslug+2*i-1] * dXdt_factor[i]
+
+            loop_index = (i != numofliquidslug) ? i+1 : 1
+            du[2*i] = u[2*numofliquidslug+2*i] * dXdt_factor[loop_index]
 
             if i != numofliquidslug
                 du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1])
@@ -118,7 +136,7 @@ if p.tube.closedornot == true
         # du[4*numofliquidslug+1:5*numofliquidslug] .= dMdtdynamicsmodel(Xpvapor,sys) *0.0
         dMdt = dMdtdynamicsmodel(Xpvapor,sys)
         dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
-
+        # dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)*0.0
         # ρ = M ./ Lvaporplug ./ (Ac .* ((d .- 2δ) ./ d).^2 )
         # P = DtoP.(ρ)
 
@@ -192,9 +210,14 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
 
         axial_rhs = Ac*k*(slope_r-slope_l) /Hfg[i]
 
-        dMdt[i] = (sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]) + axial_rhs
-
-        # println(axial_rhs)
+# simulate dryout
+        δ_dry = 1e-6
+        if δ[i] > δ_dry
+            dMdt[i] = (sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]) + axial_rhs
+        else
+            dMdt[i] = 0.0;
+        end
+        # println(dMdt)
         # println((sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]))
     end
 
