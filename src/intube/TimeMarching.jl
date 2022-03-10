@@ -17,7 +17,8 @@ function ODE_innertube(u,p,t)
 
     dynamicsdu = dynamicsmodel(u[1:index_dynamics_end-1],newsys)
 
-
+    # println(newsys.liquid.Xp)
+    # println(newsys.liquid.Xp)
 
     # walldu = duwallθtovec(wallmodel(newsys))
     # walldu = duwallθtovec(duwalltemp)
