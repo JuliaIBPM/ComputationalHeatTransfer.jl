@@ -6,17 +6,15 @@ export PHPSystem,Tube,Evaporator,Condenser,Liquid,Vapor,Wall,Mapping
 # using ..Tools
 
 """
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
+Tube is a struct containing tube geometries
+    d           ::Float64   tube characteristic diameter
+    peri        ::Float64   tube perimeter (may be an arbitrary shape so cannot be derived from d)
+    Ac          ::Float64   tube cross-sectional area
+    L           ::Float64   tube one dimensional length
+    L2D         ::Float64   tube length for each section of the tube
+    angle       ::Float64   inclination angle of the OHP
+    g           ::Float64   gravity
+    closedornot ::Bool      if the tube is closed loop or not (open loop)
 """
 
 mutable struct Tube
@@ -30,17 +28,17 @@ mutable struct Tube
     closedornot::Bool
 end
 """
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
+Liquid is a struct containing liquid properties at a ref temperature
+    Hₗ::Float64                              heat transfer coefficient between the wall and the pure liquid slug
+    ρ::Float64                              liquid density
+    Cp::Float64                             liquid specific heat capacity
+    α::Float64                              liquid heat diffusivity
+    μₗ::Float64                              liquid dynamic viscosity
+    σ::Float64                              liquid surface tension
+    Xp::Array{Tuple{Float64,Float64},1}     interface locations for each liquid slug
+    dXdt::Array{Tuple{Float64,Float64},1}   interface velocity for each liquid slug
+    Xarrays::Array{Array{Float64,1},1}      finite difference location points within each liquid slug
+    θarrays::Array{Array{Float64,1},1}      finite difference temperature points within each liquid slug
 """
 
 mutable struct Liquid
@@ -58,21 +56,16 @@ mutable struct Liquid
 end
 
 """
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
+Vapor is a struct containing vapor properties at a ref temperature
+    Hᵥ::Float64             heat transfer coefficient between the wall and the pure vapor bubble
+    k::Float64              heat conductivity of liquid in the film
+    δmin::Float64           the delta with maximum heat transfer coefficient in the H interpolation
+    P::Array{Float64,1}     pressure in each vapor
+    δ::Array{Float64,1}     film thickness in each vapor
+end
 """
 
 mutable struct Vapor
-    # γ::Float64
     Hᵥ::Float64
     k::Float64
     δmin::Float64
@@ -81,21 +74,15 @@ mutable struct Vapor
 end
 
 """
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
+Wall is a struct containing wall properties
+    ΔTthres::Float64                superheat threshold to trigger boiling
+    Xstations::Array{Float64,1}     locations of boiling stations on the wall
+    Xarray::Array{Float64,1}        wall discrete location points for immersed boundary method
+    θarray::Array{Float64,1}        wall discrete temperature points for immersed boundary method
+end
 """
 
 mutable struct Wall
-    # α::Float64
     ΔTthres::Float64
     Xstations::Array{Float64,1}
     Xarray::Array{Float64,1}
@@ -103,17 +90,11 @@ mutable struct Wall
 end
 
 """
-PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
+Mapping is a struct containing interpolation data
+    θ_interp_walltoliquid   temperature interpolation from wall to OHP
+    θ_interp_liquidtowall   temperature interpolation from OHP to wall
+    H_interp_liquidtowall   heat transfer coefficient interpolation from OHP to wall
+    P_interp_liquidtowall   pressure interpolation from OHP to wall
 """
 
 # mutable struct Mapping
@@ -130,59 +111,32 @@ end
 
 """
 PHPSystem is a struct containing
-    γ
-    Hc
-    He
-    θc
-    θe
-    ω
-    ζ
-    L dimensionless pipe total length
-    Xc dimensionless condenser range
-    Xe dimensionless evaporater range
+    tube    ::Tube
+    liquid  ::Liquid
+    vapor   ::Vapor
+    wall    ::Wall
+    mapping ::Mapping
 """
-# add type names!
+
 mutable struct PHPSystem
-    tube::Tube
-    # evaporator::Evaporator
-    # condenser::Condenser
-    liquid::Liquid
-    vapor::Vapor
-    wall::Wall
-    mapping::Mapping
+    tube    ::Tube
+    liquid  ::Liquid
+    vapor   ::Vapor
+    wall    ::Wall
+    mapping ::Mapping
 end
 
-
+"""
+PHPSystem_nomapping is a struct containing
+    Tube
+    Liquid
+    Vapor
+    Wall
+It is used to construct PHPSystem, no other use.
+"""
 mutable struct PHPSystem_nomapping
-    tube::Tube
-    # evaporator::Evaporator
-    # condenser::Condenser
-    liquid::Liquid
-    vapor::Vapor
-    wall::Wall
+    tube    ::Tube
+    liquid  ::Liquid
+    vapor   ::Vapor
+    wall    ::Wall
 end
-# """
-# PHPSystem is a struct containing
-#     γ
-#     Hc
-#     He
-#     θc
-#     θe
-#     ω
-#     ζ
-#     L dimensionless pipe total length
-#     Xc dimensionless condenser range
-#     Xe dimensionless evaporater range
-# """
-#
-# struct PHPResult
-#     t
-#     Xp
-#     dXdt
-#     P
-#     θ
-#     M
-# end
-#
-
-# end
