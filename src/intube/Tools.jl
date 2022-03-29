@@ -5,8 +5,9 @@ XMtovec,XMδtovec,vectoXM,vectoXMδ, # transfer Xp,dXdt,M,δ to the state vector
 XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors, length of liquids, and Xp for vapor.
 ifamongone,ifamong,constructXarrays,
 duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
-Hfilm,getδarea,getMvapor,getMfilm,getMliquid,
-getMperlength,getMshortenedfilm,getMshortenedvapor
+Hfilm,getδarea,getδFromδarea,getMvapor,getMfilm,getMliquid,
+getMperlength,getMshortenedfilm,getMshortenedvapor,
+getCa,filmδcorr,getAdeposit
 
 # using ..Systems
 # using LinearAlgebra
@@ -523,9 +524,17 @@ end
 
 function Hfilm(δfilm,sys)
     δmin = sys.vapor.δmin;
+    δthreshold = 1e-6
     kₗ   = sys.vapor.k
     Hᵥ  = sys.vapor.Hᵥ
-    return δfilm > δmin ? kₗ/δfilm : Hᵥ + δfilm*(kₗ/δmin - Hᵥ)/δmin
+
+    if δfilm > δmin
+        return kₗ/δfilm
+    elseif δfilm > δthreshold
+        return  Hᵥ + δfilm*(kₗ/δmin - Hᵥ)/δmin
+    else
+        return Hᵥ
+    end
 end
 
 function getδarea(Ac,d,δ)
@@ -533,6 +542,13 @@ function getδarea(Ac,d,δ)
 
     δarea
 end
+
+function getδFromδarea(Ac,d,δarea)
+    δ = sqrt(δarea/Ac) * d/2
+
+    δ
+end
+
 
 function getMvapor(sys)
 
@@ -677,30 +693,68 @@ function getMshortenedvapor(sys,i)
 
     Mshortenedvapor = M_per_length[left_index] * (Lvaporplug[i]/2) + M_per_length[right_index] * (Lvaporplug[i]/2)
 end
-# function getvaporHarray(xs,oneδratio,Hf,Hv,L)
-#     oneLvapor = mod.(xs[end]-xs[1],L)
-#     half_film_L = 0.5*oneδratio*oneLvapor
-#     x_interpolate = Float64[]
-#     H_interpolate = Float64[]
+
+function getCa(μ,σ,velocity)
+    Ca = abs.(μ.*velocity./σ)
+end
+
+function filmδcorr(Ca,d)
+    filmδ = d .* 0.67.*Ca.^(2/3)./(1 .+ 3.35.*Ca.^(2/3))
+end
+
+function getAdeposit(sys)
+    dXdt= sys.liquid.dXdt
+    Ac= sys.tube.Ac
+    d = sys.tube.d
+    δ = sys.vapor.δ
+    μₗ = sys.liquid.μₗ
+    σ = sys.liquid.σ
+
+    numofliquidslug = length(dXdt)
+
+    δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
+
+# need to initialize it later on
+    Adeposit = deepcopy(dXdt)
+
+    Ca = getCa.(μₗ,σ,dXdt)
+    δarea_corr = getδarea.(Ac,d,filmδcorr.(Ca,d))
 
 
-#     if xs[end] > xs[1]
-#         x_interpolate = [xs[1],xs[1]+half_film_L,xs[1]+half_film_L,xs[end]-half_film_L,xs[end]-half_film_L,xs[end]]
-#         H_interpolate = [Hf,Hf,Hv,Hv,Hf,Hf]
-#     elseif (xs[1]+half_film_L < L) && (xs[end]-half_film_L > 0.0)
-#         x_interpolate = [0.0,xs[end]-half_film_L,xs[end]-half_film_L,xs[end],xs[1],xs[1]+half_film_L,xs[1]+half_film_L,L]
-#         H_interpolate = [Hv,Hv,Hf,Hf,Hf,Hf,Hv,Hv]
-#     elseif (xs[1]+half_film_L > L) && (xs[end]-half_film_L > 0.0)
-#         x_interpolate = [0.0,mod(xs[1]+half_film_L,L),mod(xs[1]+half_film_L,L),xs[end]-half_film_L,xs[end]-half_film_L,xs[end],xs[1],L]
-#         H_interpolate = [Hf,Hf,Hv,Hv,Hf,Hf,Hf,Hf]
-#     else
-#         x_interpolate = [0.0,xs[end],xs[1],xs[1]+half_film_L,xs[1]+half_film_L,mod(xs[end]-half_film_L,L),mod(xs[end]-half_film_L,L),L]
-#         H_interpolate = [Hf,Hf,Hf,Hf,Hv,Hv,Hf,Hf]
-#     end
+    for i = 1:length(Adeposit)
+        loop_index = (i != numofliquidslug) ? i+1 : 1
+        Adeposit_left = dXdt[i][1] > 0 ? δarea_corr[i][1] : δarea[i]
+        Adeposit_right = dXdt[i][end] < 0 ? δarea_corr[i][end] : δarea[loop_index]
+        Adeposit[i]  =   (Adeposit_left, Adeposit_right)
+    end
 
-# #             println(x_interpolate)
+    Adeposit
+end
 
-#     H_interpolation = LinearInterpolation(x_interpolate, H_interpolate);
+function getAdeposit(sys,δdeposit)
+    dXdt= sys.liquid.dXdt
+    Ac= sys.tube.Ac
+    d = sys.tube.d
+    δ = sys.vapor.δ
+    μₗ = sys.liquid.μₗ
+    σ = sys.liquid.σ
 
-#     H_interpolation
-# end
+    numofliquidslug = length(dXdt)
+
+    δdepositArea = getδarea(Ac,d,δdeposit)
+
+    δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
+
+# need to initialize it later on
+    Adeposit = deepcopy(dXdt)
+
+
+    for i = 1:length(Adeposit)
+        loop_index = (i != numofliquidslug) ? i+1 : 1
+        Adeposit_left = dXdt[i][1] > 0 ? δdepositArea : δarea[i]
+        Adeposit_right = dXdt[i][end] < 0 ? δdepositArea : δarea[loop_index]
+        Adeposit[i]  =   (Adeposit_left, Adeposit_right)
+    end
+
+    Adeposit
+end

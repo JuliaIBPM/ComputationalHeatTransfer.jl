@@ -30,6 +30,10 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     # println(sys.liquid.Xp)
     # println(sys.liquid.dXdt)
 
+    δdeposit = 1e-5
+    Adeposit = getAdeposit(sys,δdeposit)
+    # println(Adeposit)
+
     μₗ = sys.liquid.μₗ
 
     Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
@@ -42,6 +46,9 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     P = DtoP.(ρ)
     θ = PtoT.(P)
     #
+    # println((Ac .* ((d .- 2δ[23]) ./ d).^2 ))
+    # println(ρ[23])
+    # println(δ[23])
     # println(M)
     # println(ρ)
     # println(P)
@@ -54,7 +61,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
     rhs_press = Ac ./ lhs
 
-    dXdt_to_stress = -8*μₗ/d
+# modify f
+    dXdt_to_stress = -8*μₗ/d * 2.0
     rhs_dXdt = peri .* Lliquidslug .* dXdt_to_stress ./ lhs
 
 
@@ -69,97 +77,111 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
     # Prescribed pressure fields
 
-
     if p.tube.closedornot == false
 
-    for i = 1:numofliquidslug
-        du[2*i-1] = u[2*numofliquidslug+2*i-1]
-        du[2*i] = du[2*i-1]
-        du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] +rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1])
-        # use ℘L and ω for now, in the future change them to one value rather than a array.
-        du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
-
-    end
-
-
-    dMdt = dMdtdynamicsmodel(Xpvapor,sys)
-    dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
-    # dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)*0.0
-# not sure which one is better
-    du[4*numofliquidslug+1:5*numofliquidslug+1] .= dMdt
-    du[5*numofliquidslug+2:end] .= dδdt
-
-    return du
-    end
-
-if p.tube.closedornot == true
+            numofvaporbubble = numofliquidslug + 1
 
         for i = 1:numofliquidslug
-            # du[2*i-1] = u[2*numofliquidslug+2*i-1]
-            # du[2*i] = du[2*i-1]
-
-            # println(u[2*numofliquidslug+2*i-1])
-            # println(u[2*numofliquidslug+2*i-1] * dXdt_factor[i])
-            # println(dXdt_factor[i])
-
-            du[2*i-1] = u[2*numofliquidslug+2*i-1] * dXdt_factor[i]
-
-            loop_index = (i != numofliquidslug) ? i+1 : 1
-            du[2*i] = u[2*numofliquidslug+2*i] * dXdt_factor[loop_index]
-
-            if i != numofliquidslug
-                du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1])
-            else
-                du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1])
-            end
-
-            # Prescribed pressure difference
-
-            # Δp = 1e3
-            #
-            # if i != numofliquidslug
-            #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * Δp
-            # else
-            #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * Δp
-            # end
-
-            # use ℘L and ω for now, in the future change them to one value rather than a array.
-                # println("du ", du[2*numofliquidslug + 2*i-1])
-                # println("friction force ",  rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] * lhs)
+            du[2*i-1] = u[2*numofliquidslug+2*i-1]
+            du[2*i] = du[2*i-1]
+            du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] +rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1])
             du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
 
         end
 
-    # not sure which one is better
-        # dMdt = 0
 
-        # du[4*numofliquidslug+1:5*numofliquidslug] .= dMdtdynamicsmodel(Xpvapor,sys) *0.0
         dMdt = dMdtdynamicsmodel(Xpvapor,sys)
-        dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
-        # dδdt = dMdt .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)*0.0
-        # ρ = M ./ Lvaporplug ./ (Ac .* ((d .- 2δ) ./ d).^2 )
-        # P = DtoP.(ρ)
-
-        δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
-        M1 = δarea .* Lvaporplug .* ρₗ
-        M2 = ρ .* (Ac .- δarea) .* Lvaporplug
-        # println(ρ)
-        # println(M1)
-        # println(M2)
-        # println(M1+M2)
-
-        du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt
-        du[5*numofliquidslug+1:end] .= dδdt # equals to 0 for now
+        dδdt = (dMdt) .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
+        du[4*numofliquidslug+1:5*numofliquidslug+1] .= dMdt
+        du[5*numofliquidslug+2:end] .= dδdt
 
         return du
-end
+        end
+
+    if p.tube.closedornot == true
+
+        numofvaporbubble = numofliquidslug
+
+        v_liquid_left=zeros(numofliquidslug)
+        v_liquid_right=zeros(numofliquidslug)
+        v_vapor_left=zeros(numofvaporbubble)
+        v_vapor_right=zeros(numofvaporbubble)
+
+            for i = 1:numofliquidslug
+
+    # temperary v, need a new momentum equation to solve for it
+                v_momentum = u[2*numofliquidslug+2*i-1]
+
+                v_liquid_left[i] = v_momentum + v_momentum*Adeposit[i][1]/(Ac-Adeposit[i][1])
+                v_liquid_right[i] = v_momentum + v_momentum*Adeposit[i][end]/(Ac-Adeposit[i][end])
+
+                # loop_index = i == numofliquidslug ? 1 : i+1
+                # v_liquid_left[i] = v_momentum + v_momentum*δarea[i][1]/(Ac-δarea[i][1])
+                # v_liquid_right[i] = v_momentum + v_momentum*δarea[loop_index]/(Ac-δarea[loop_index])
+
+                # v_liquid_left[i] = u[2*numofliquidslug+2*i-1]
+                # v_liquid_right[i] = u[2*numofliquidslug+2*i]
+
+
+                du[2*i-1] = v_liquid_left[i]
+                du[2*i] = v_liquid_right[i]
+
+                if i != numofliquidslug
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1])
+                else
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1])
+                end
+
+                du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
+
+            end
+
+            # anti_loop_index = (i != 1) ? i-1 : numofvaporbubble
+            # v_momentum_leftslug = u[2*numofliquidslug+2*loop_index]
+            # v_vapor_left[2:end] = v_momentum_leftslug + v_momentum_leftslug*Adeposit[loop_index][end]/(Ac-Adeposit[loop_index][end])
+            v_vapor_left[2:end] = v_liquid_right[1:end-1]
+            v_vapor_left[1] = v_liquid_right[end]
+            v_vapor_right = v_liquid_left
+
+
+
+            A_dδdt_right_vapor = [elem[1] for elem in Adeposit]
+
+            A_dδdt_right_liquid = [elem[2] for elem in Adeposit]
+            A_dδdt_left_vapor = zeros(size(A_dδdt_right_vapor))
+            A_dδdt_left_vapor[2:end] = A_dδdt_right_liquid[1:end-1]
+            A_dδdt_left_vapor[1] = A_dδdt_right_liquid[end]
+
+
+            # dδdt = (dMdt - ρₗ.*v_vapor_left.*Adeposit[loop_index][end] + ρₗ.*v_vapor_right.*Adeposit[i][1]) .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
+            dMdt_sensible,dMdt_latent = dMdtdynamicsmodel(Xpvapor,sys)
+            # println(dMdt_latent[21:26])
+            # println(dMdt_sensible[21:26])
+            # println(ρₗ .* A_dδdt_right_vapor .* v_vapor_right)
+            # println(ρₗ .* A_dδdt_left_vapor  .* v_vapor_left)
+
+
+            E = ρₗ .* Ac .* 4 .* δ .* (d .- δ) ./ (d^2)
+            C = ρₗ .* Ac .* 4 .* (d .- 2δ) ./ (d^2)
+            # dδdt = (dMdt_latent) .* d^2 ./ ( (-4) .* (d .- 2δ) .* ρₗ .* Lvaporplug .* Ac)
+            dδdt = (-dMdt_latent + ρₗ .* A_dδdt_right_vapor .* v_vapor_right - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left - E .* (v_vapor_right-v_vapor_left)) ./ (C .* Lvaporplug)
+            # println( v_vapor_right)
+            # println( v_vapor_left)
+            # println(dMdt_latent)
+            du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt_latent+dMdt_sensible
+            du[5*numofliquidslug+1:end] .= dδdt # equals to 0 for now
+
+            return du
+    end
 
 
 end
 
 function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSystem)
 
-    dMdt=zeros(length(Xpvapor))
+    # dMdt=zeros(length(Xpvapor))
+    dMdt_sensible=zeros(length(Xpvapor))
+    dMdt_latent=zeros(length(Xpvapor))
 
     # get Hvapor
     peri = sys.tube.peri
@@ -210,26 +232,27 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
 
         axial_rhs = Ac*k*(slope_r-slope_l) /Hfg[i]
 
-# simulate dryout
-        δ_dry = 1e-6
-        if δ[i] > δ_dry
-            dMdt[i] = (sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]) + axial_rhs
-        else
-            dMdt[i] = 0.0;
-        end
-        # println(dMdt)
-        # println((sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]))
-    end
+        # simulate dryout
+                δ_dry = 1e-6
+                if δ[i] > δ_dry
+                    dMdt_sensible[i] = 0.0
+                    dMdt_latent[i] = (sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]) + axial_rhs
+                else
+                    dMdt_sensible[i] = (sum(fx) * dx_vapor) * (Hfilm(0.0,sys) *peri/Hfg[i])
+                    dMdt_latent[i] = axial_rhs
+                end
+                # println(dMdt_latent)
+                # println((sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]))
+            end
 
-    # for i = 1:length(Xpvapor)
-    #     indexes = findall( x -> (mod(x[1],length(Xpvapor)) == mod(i,length(Xpvapor)) && (x[end] == -1)), sys.mapping.walltoliquid)
-    #
-    #         for j in length(indexes)
-    #             dMdt[i] += Hvapor[i]*dx*(sys.wall.θarray[indexes[j]] - θ[i])
-    #         end
-    # end
-    return dMdt
-
+            # for i = 1:length(Xpvapor)
+            #     indexes = findall( x -> (mod(x[1],length(Xpvapor)) == mod(i,length(Xpvapor)) && (x[end] == -1)), sys.mapping.walltoliquid)
+            #
+            #         for j in length(indexes)
+            #             dMdt[i] += Hvapor[i]*dx*(sys.wall.θarray[indexes[j]] - θ[i])
+            #         end
+            # end
+            return dMdt_sensible,dMdt_latent
 end
 
 

@@ -359,14 +359,16 @@ function suitable_for_boiling(p,i)
         L_vapor_left =  Lvaporplug[index]
         L_vapor_right = (index == index_max) ? Lvaporplug[1] : Lvaporplug[index + 1]
 
-        suitable_flag = (2*p.tube.d < L_vapor_left) && (2*p.tube.d < L_vapor_right) ? true : false
-
+        suitable_flag = (5*p.tube.d < L_vapor_left) && (5*p.tube.d < L_vapor_right) ? true : false
 
 
         L_liquid_left =  mod(p.wall.Xstations[i] - p.liquid.Xp[index][1],p.tube.L)
         L_liquid_right = mod(p.liquid.Xp[index][2] - p.wall.Xstations[i],p.tube.L)
 
-        if (5*p.tube.d > L_liquid_left) || (5*p.tube.d > L_liquid_right)
+                # println(L_liquid_left)
+                # println(L_liquid_right)
+
+        if (10*p.tube.d > L_liquid_left) || (10*p.tube.d > L_liquid_right)
             suitable_flag = false
         end
 

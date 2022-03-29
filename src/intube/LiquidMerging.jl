@@ -1,7 +1,7 @@
 export merging_affect!,merging_condition,nucleateboiling
 
 function merging_affect!(integrator)
-    println("merged!")
+
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
     δv = p.tube.d > (integrator.dt*maximum(p.liquid.dXdt)[1]) ? p.tube.d : (integrator.dt*maximum(p.liquid.dXdt)[1])
@@ -17,6 +17,7 @@ function merging_affect!(integrator)
     # println(length(p.liquid.Xp))
 
     for i in indexmergingsite
+        println("merged! in", i ," at ",integrator.t)
         p = merging(p,i)
 
     #
@@ -80,6 +81,11 @@ function merging(p,i)
     Mmerged = Mfilm[i]+Mvapor[i]
     # Mshortenedfilm = getMshortenedfilm(p,i)
     # Mshortenedvapor = getMshortenedvapor(p,i)
+    # if i == 1
+    #     println(Mfilm[left_index])
+    #     println(Mfilm[i])
+    #     println(Mfilm[right_index])
+    # end
 
     #
 
@@ -106,6 +112,8 @@ function merging(p,i)
     dXdtnewonevalue = (i != 1) ? (p.liquid.dXdt[i-1][1]*Lliquidslug[i-1] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[i-1]+Lliquidslug[i]) : (p.liquid.dXdt[end][1]*Lliquidslug[end] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[end]+Lliquidslug[i])
 
 
+    # println(p.liquid.Xp[1])
+    # println(p.liquid.Xp[end])
     # println(Xpnewone)
 
 
@@ -117,7 +125,7 @@ function merging(p,i)
     else
         splice!(systemp.liquid.Xp,length(systemp.liquid.Xp));
         splice!(systemp.liquid.Xp,1);
-        insert!(systemp.liquid.Xp,1,Xpnewone)
+        insert!(systemp.liquid.Xp,length(systemp.liquid.Xp)+1,Xpnewone)
     end
 
     if i != 1
@@ -125,7 +133,7 @@ function merging(p,i)
     else
         splice!(systemp.liquid.dXdt,length(systemp.liquid.dXdt));
         splice!(systemp.liquid.dXdt,1);
-        insert!(systemp.liquid.dXdt,1,(dXdtnewonevalue,dXdtnewonevalue))
+        insert!(systemp.liquid.dXdt,length(systemp.liquid.dXdt)+1,(dXdtnewonevalue,dXdtnewonevalue))
     end
 
     splice!(systemp.vapor.δ,i)
@@ -163,11 +171,21 @@ function merging(p,i)
     # println(sum(getMfilm(systemp))+sum(getMvapor(systemp)))
     # println(getMliquid(p))
     # println(getMliquid(systemp))
-    # println(p.vapor.P)
+    # println(p.vapor.δ)
+    # println(systemp.vapor.δ)
     # println(systemp.vapor.P)
     # println(XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot))
     # println(XptoLvaporplug(systemp.liquid.Xp,systemp.tube.L,systemp.tube.closedornot))
 
+# test
+    # Mfilmnew = getMfilm(systemp)
+    # Mvapornew = getMvapor(systemp)
+    # if i == 1
+    #     println(Mfilmnew[i])
+    #     # println(Mvapornew[i])
+    #     println(Mfilmnew[end])
+    #     # println(Mvapornew[end])
+    # end
     return deepcopy(systemp)
 end
 
