@@ -1,6 +1,7 @@
 # module Boiling
 #
 # using ..Systems,..Tools
+# using CSV
 
 export boiling_affect!,nucleateboiling
 # boiling_condition,
@@ -35,6 +36,7 @@ function boiling_affect!(integrator)
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p))
 
+    b_count = 0;
     for i = 1:length(p.wall.Xstations)
 
         if ifamong(p.wall.Xstations[i], p.liquid.Xp, p.tube.L) && suitable_for_boiling(p,i)
@@ -47,7 +49,13 @@ function boiling_affect!(integrator)
             # println(Δθ)
             if Δθ > Δθthreshold
                 # println("Boiled! at ",p.wall.Xstations[i], " on ", integrator.t/t_to_nondi_t)
-                println("Boiled! on ",p.wall.Xstations[i], " at ", integrator.t)#
+                # fid1 = open("boiling.csv", "a")
+                # writecsv(fid1, [p.wall.Xstations[i] integrator.t])
+                # close(fid1)
+
+                # println("Boiled! on ",p.wall.Xstations[i], " at ", integrator.t)#
+                push!(boil_hist,[i,integrator.t]);
+                b_count += 1;
 # ```modified here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!```
 #                 θinsert = p.mapping.θ_interp_walltoliquid.(Xstations[i])
 #                 Pinsert = nondi_TtoP.(θinsert)
@@ -66,6 +74,7 @@ function boiling_affect!(integrator)
 
     end
 
+    # print("boil number=",b_count)
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
     # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug

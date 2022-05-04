@@ -1,4 +1,4 @@
-export merging_affect!,merging_condition,nucleateboiling
+export merging_affect!,merging_condition,nucleateboiling,merging
 
 function merging_affect!(integrator)
 
@@ -17,7 +17,7 @@ function merging_affect!(integrator)
     # println(length(p.liquid.Xp))
 
     for i in indexmergingsite
-        println("merged! in", i ," at ",integrator.t)
+        # println("merged! in", i ," at ",integrator.t)
         p = merging(p,i)
 
     #
@@ -156,13 +156,19 @@ function merging(p,i)
 
     splice!(systemp.liquid.Xarrays,i);
     (i != 1) ? splice!(systemp.liquid.Xarrays,i-1) : splice!(systemp.liquid.Xarrays,length(systemp.liquid.Xarrays));
-    (i != 1) ? insert!(systemp.liquid.Xarrays,i-1,Xarraysnewone) : insert!(systemp.liquid.Xarrays,i,Xarraysnewone);
+    (i != 1) ? insert!(systemp.liquid.Xarrays,i-1,Xarraysnewone) : insert!(systemp.liquid.Xarrays,length(systemp.liquid.Xarrays)+1,Xarraysnewone);
 
     θarraysnewone = (i != 1) ? [p.liquid.θarrays[i-1][1:end-1]; (p.liquid.θarrays[i-1][end-1]+p.liquid.θarrays[i][2])/2 ;p.liquid.θarrays[i][2:end]] : [p.liquid.θarrays[end][1:end-1]; (p.liquid.θarrays[end][end-1]+p.liquid.θarrays[i][2]) / 2 ;p.liquid.θarrays[i][2:end]]
     splice!(systemp.liquid.θarrays,i);
     (i != 1) ? splice!(systemp.liquid.θarrays,i-1) : splice!(systemp.liquid.θarrays,length(systemp.liquid.θarrays));
-    (i != 1) ? insert!(systemp.liquid.θarrays,i-1,θarraysnewone) : insert!(systemp.liquid.θarrays,i,θarraysnewone);
+    (i != 1) ? insert!(systemp.liquid.θarrays,i-1,θarraysnewone) : insert!(systemp.liquid.θarrays,length(systemp.liquid.θarrays)+1,θarraysnewone);
 
+    # if i == 1
+        # println("dx",Xarraysnewone[2]-Xarraysnewone[1])
+        # println("Lx",Xarraysnewone[end]-Xarraysnewone[1])
+        # println("systemp.liquid.Xarrays",systemp.liquid.Xarrays)
+        # println("systemp.liquid.θarrays",systemp.liquid.θarrays)
+    # end
     # println(sum(getMfilm(p)))
     # println(sum(getMfilm(systemp)))
     # println(sum(getMvapor(p)))

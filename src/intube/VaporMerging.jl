@@ -15,6 +15,8 @@ function vaporMergingAffect!(integrator)
         p = vaporMerging(p,i)
     end
 
+    # println(length(p.liquid.Xarrays))
+
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
 
@@ -65,7 +67,7 @@ function vaporMerging(p,i)
     MfilmNew = MfilmPreMerging + Mliquid[i]
 
     LvaporNew = Lvaporplug[i] + Lliquidslug[i] + Lvaporplug[right_index]
-    δareaNew = MfilmNew ./ LvaporNew
+    δareaNew = MfilmNew ./ LvaporNew ./ p.liquid.ρ
     δNewOne = getδFromδarea(p.tube.Ac,p.tube.d,δareaNew)
 
     PNewOne = DtoP(MvaporNew/LvaporNew/(Ac-δareaNew))
@@ -75,6 +77,8 @@ function vaporMerging(p,i)
 # delete ith liquid slug
     splice!(systemp.liquid.Xp,i)
     splice!(systemp.liquid.dXdt,i)
+    splice!(systemp.liquid.Xarrays,i)
+    splice!(systemp.liquid.θarrays,i)
 
     # splice!(systemp.vapor.δ,i)
     # splice!(systemp.vapor.P,i)

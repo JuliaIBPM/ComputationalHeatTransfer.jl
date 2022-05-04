@@ -428,7 +428,7 @@ function constructXarrays(X0::Array{Tuple{Float64,Float64},1},N,θinitial,L)
 
     Lliquid = XptoLliquidslug(X0,L)
 
-    Nliquid =  floor.(Int, N.*Lliquid./L)
+    Nliquid =  ceil.(Int, N.*Lliquid./L)
 
     for i = 1:length(Xarrays)
         if X0[i][1] < X0[i][2]
@@ -461,7 +461,7 @@ function constructoneXarray(X0::Tuple{Float64,Float64},Nliquid,L)
             Xarray = range(X0[1], X0[2]+L, length=Nliquid) .- L
             Xarray = mod.(Xarray, L)
         end
-    # end
+    # endF
 
     return Xarray
 end
@@ -524,7 +524,7 @@ end
 
 function Hfilm(δfilm,sys)
     δmin = sys.vapor.δmin;
-    δthreshold = 1e-6
+    δthreshold = 1e-5
     kₗ   = sys.vapor.k
     Hᵥ  = sys.vapor.Hᵥ
 

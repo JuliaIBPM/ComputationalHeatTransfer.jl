@@ -30,7 +30,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     # println(sys.liquid.Xp)
     # println(sys.liquid.dXdt)
 
-    δdeposit = 1e-5
+    δdeposit = δfilm
     Adeposit = getAdeposit(sys,δdeposit)
     # println(Adeposit)
 
@@ -61,8 +61,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
     rhs_press = Ac ./ lhs
 
-# modify f
-    dXdt_to_stress = -8*μₗ/d * 2.0
+# modify f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    dXdt_to_stress = -8*μₗ/d
     rhs_dXdt = peri .* Lliquidslug .* dXdt_to_stress ./ lhs
 
 
@@ -122,14 +122,15 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                 # v_liquid_left[i] = u[2*numofliquidslug+2*i-1]
                 # v_liquid_right[i] = u[2*numofliquidslug+2*i]
 
+                rhs_dLdt = -v_momentum*(v_liquid_right[i]-v_liquid_left[i])/Lliquidslug[i]
 
                 du[2*i-1] = v_liquid_left[i]
                 du[2*i] = v_liquid_right[i]
 
                 if i != numofliquidslug
-                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1])
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt
                 else
-                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1])
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt
                 end
 
                 du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
@@ -233,7 +234,7 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
         axial_rhs = Ac*k*(slope_r-slope_l) /Hfg[i]
 
         # simulate dryout
-                δ_dry = 1e-6
+                δ_dry = 1e-5
                 if δ[i] > δ_dry
                     dMdt_sensible[i] = 0.0
                     dMdt_latent[i] = (sum(fx) * dx_vapor) * (Hvapor[i] *peri/Hfg[i]) + axial_rhs
