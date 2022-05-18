@@ -1,7 +1,8 @@
 module OneDOHP
 
     using LinearAlgebra
-    using CartesianGrids
+    using Reexport
+    @reexport using CartesianGrids
     using Revise
 
     includet("intube/Systems.jl")

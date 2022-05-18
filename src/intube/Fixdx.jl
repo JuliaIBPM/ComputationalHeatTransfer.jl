@@ -3,8 +3,11 @@ export fixdx_affect!,fixdx_condition
 function fixdx_condition(u,t,integrator)
 
         p = deepcopy(getcurrentsys(integrator.u,integrator.p));
-        δξmax = 2*p.tube.d
-        δξmin = 0.5*p.tube.d
+
+        dξ_init = p.tube.L / p.tube.N
+
+        δξmax = 2*dξ_init
+        δξmin = 0.5*dξ_init
 
         sys = deepcopy(getcurrentsys(integrator.u,integrator.p));
 
