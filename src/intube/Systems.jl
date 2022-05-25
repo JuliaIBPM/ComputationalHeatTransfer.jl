@@ -26,7 +26,7 @@ mutable struct Tube
     angle::Float64
     g::Float64
     closedornot::Bool
-    N::Int64
+    N::Int64  
 end
 """
 Liquid is a struct containing liquid properties at a ref temperature
