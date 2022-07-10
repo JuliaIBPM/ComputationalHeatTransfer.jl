@@ -1,7 +1,7 @@
 # module Tools
 
 export getheight, # get actrual height of the tube
-XMtovec,XMδtovec,vectoXM,vectoXMδ, # transfer Xp,dXdt,M,δ to the state vector
+XMtovec,XMδtovec,vectoXM,vectoXMδ,XMδLtovec,vectoXMδL, # transfer Xp,dXdt,M,δ to the state vector
 XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors, length of liquids, and Xp for vapor.
 ifamongone,ifamong,constructXarrays,
 duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
@@ -113,6 +113,23 @@ end
 function XMδtovec(Xp,dXdt,M,δ)
 
     return ([XMtovec(Xp,dXdt,M);δ])
+end
+
+"""
+    This function is to transform Xp, dXdt of the interface, and M of the vapor to form our state vector u
+        Xp    ::   the locations of all interfaces
+        dXdt  ::   the 1D velocity of all interfaces
+        M     ::   the mass of all vapors
+        δstart::Array{Float64,1}
+        δend::Array{Float64,1}
+        Lfilm_start::Array{Float64,1}
+        Lfilm_end::Array{Float64,1}
+        Eratio::Array{Float64,1}
+"""
+
+function XMδLtovec(Xp,dXdt,M,δstart,δend,Lfilm_start,Lfilm_end)
+
+    return ([XMtovec(Xp,dXdt,M);δstart;δend;Lfilm_start;Lfilm_end])
 end
 
 """
@@ -243,6 +260,77 @@ return "error"
 end
 
 """
+    This function is to transform Xp, dXdt of the interface, and M of the vapor to form our state vector u
+        u    ::   the dynamic portion of state vector
+"""
+
+function vectoXMδL(u::Array{Float64,1})
+if mod(length(u),9) == 2
+#     maxindex = Integer( (length(u) - 2)/6 )
+
+#     Xp = map(tuple, zeros(maxindex), zeros(maxindex))
+#     dXdt = map(tuple, zeros(maxindex), zeros(maxindex))
+#     M = zeros(maxindex+1)
+#     δ = zeros(maxindex+1)
+
+#     for i = 1:maxindex
+
+#         # input Xp
+#         Xp[i] = (u[2*i-1],u[2*i])
+
+#         # input dXdt
+#         dXdt[i] = (u[2*maxindex + 2*i-1],u[2*maxindex + 2*i])
+#     end
+
+#     for i = 1:(maxindex+1)
+
+#         # input M
+#         M[i] = u[4*maxindex + i]
+#         δ[i] = u[5*maxindex + 1 + i]
+#     end
+
+#     return Xp,dXdt,M,δ
+    return "haven't finish new open end code"
+end
+
+if mod(length(u),9) == 0
+    maxindex = div(length(u),9)
+
+    Xp = map(tuple, zeros(maxindex), zeros(maxindex))
+    dXdt = map(tuple, zeros(maxindex), zeros(maxindex))
+    M = zeros(maxindex)
+    δstart = zeros(maxindex)
+    δend = zeros(maxindex)
+    Lfilm_start = zeros(maxindex)
+    Lfilm_end = zeros(maxindex)
+
+    for i = 1:maxindex
+
+        # input Xp
+        Xp[i] = (u[2*i-1],u[2*i])
+
+        # input dXdt
+        dXdt[i] = (u[2*maxindex + 2*i-1],u[2*maxindex + 2*i])
+    end
+
+    for i = 1:maxindex
+
+        # input M
+        M[i] = u[4*maxindex + i]
+        δstart[i] = u[5*maxindex + i]
+        δend[i] =  u[6*maxindex + i]
+        Lfilm_start[i] = u[7*maxindex + i]
+        Lfilm_end[i] = u[8*maxindex + i]
+    end
+
+    return Xp,dXdt,M,δstart,δend,Lfilm_start,Lfilm_end
+end
+
+return "new function error"
+
+end
+
+"""
     This function is to transform Xp of every interface, and L of the tube to form an array of vapor length
         Xp    ::   the locations of all interfaces
         L     ::   the length of the 1D tube
@@ -332,6 +420,7 @@ function getXpvapor(Xp,L,closedornot)
     end
 
     if closedornot == true
+
         Xpvapor[1]=(Xp[end][end],Xp[1][1])
 
         for i = 2:(length(Xp))
@@ -456,12 +545,14 @@ function constructoneXarray(X0::Tuple{Float64,Float64},Nliquid,L)
 
     # for i = 1:length(Xarray)
         if X0[1] < X0[2]
-            Xarray = range(X0[1], X0[2], length=Nliquid)
+            Xarray = Array(range(X0[1], X0[2], length=Nliquid))
         else
-            Xarray = range(X0[1], X0[2]+L, length=Nliquid) .- L
-            Xarray = mod.(Xarray, L)
+            Xarray = Array(mod.(range(X0[1], X0[2]+L, length=Nliquid),L))
+            # Xarray = mod.(Xarray, L)
         end
-    # endF
+
+        Xarray[1] = X0[1]
+        Xarray[end] = X0[2]
 
     return Xarray
 end
@@ -731,28 +822,65 @@ function getAdeposit(sys)
     Adeposit
 end
 
+# function getAdeposit(sys,δdeposit)
+#     dXdt= sys.liquid.dXdt
+#     Ac= sys.tube.Ac
+#     d = sys.tube.d
+#     δ = sys.vapor.δ
+#     μₗ = sys.liquid.μₗ
+#     σ = sys.liquid.σ
+
+#     numofliquidslug = length(dXdt)
+
+#     δdepositArea = getδarea(Ac,d,δdeposit)
+
+#     δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
+
+# # need to initialize it later on
+#     Adeposit = deepcopy(dXdt)
+
+
+#     for i = 1:length(Adeposit)
+#         loop_index = (i != numofliquidslug) ? i+1 : 1
+#         Adeposit_left = dXdt[i][1] > 0 ? δdepositArea : δarea[i]
+#         Adeposit_right = dXdt[i][end] < 0 ? δdepositArea : δarea[loop_index]
+#         Adeposit[i]  =   (Adeposit_left, Adeposit_right)
+#     end
+
+#     Adeposit
+# end
+
 function getAdeposit(sys,δdeposit)
     dXdt= sys.liquid.dXdt
     Ac= sys.tube.Ac
     d = sys.tube.d
-    δ = sys.vapor.δ
-    μₗ = sys.liquid.μₗ
-    σ = sys.liquid.σ
+    δstart = sys.vapor.δstart
+    δend = sys.vapor.δend
 
-    numofliquidslug = length(dXdt)
+    Nliquid = length(dXdt)
+
+    loop_plus_index = [2:Nliquid;1]
+
+    # numofliquidslug = length(dXdt)
 
     δdepositArea = getδarea(Ac,d,δdeposit)
 
-    δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
+
+
+    δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
+    δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
+    # δarea = Ac .* (1 .- ((d .- 2*δ ) ./ d) .^ 2);
 
 # need to initialize it later on
     Adeposit = deepcopy(dXdt)
 
 
     for i = 1:length(Adeposit)
-        loop_index = (i != numofliquidslug) ? i+1 : 1
-        Adeposit_left = dXdt[i][1] > 0 ? δdepositArea : δarea[i]
-        Adeposit_right = dXdt[i][end] < 0 ? δdepositArea : δarea[loop_index]
+        # loop_index = (i != numofliquidslug) ? i+1 : 1
+        Adeposit_left = dXdt[i][1] > 0 ? δdepositArea : δarea_end[i]
+        Adeposit_right = dXdt[i][end] < 0 ? δdepositArea : δarea_start[loop_plus_index[i]]
+
+        # println(δarea_start)
         Adeposit[i]  =   (Adeposit_left, Adeposit_right)
     end
 

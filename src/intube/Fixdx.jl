@@ -40,8 +40,11 @@ function fixdx_affect!(integrator)
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
     L = p.tube.L
-    δξmax = 2*p.tube.d
-    δξmin = 0.5*p.tube.d
+
+    dξ_init = p.tube.L / p.tube.N
+
+    δξmax = 2*dξ_init
+    δξmin = 0.5*dξ_init
 
     sys = deepcopy(getcurrentsys(integrator.u,integrator.p));
 
@@ -67,12 +70,27 @@ function fixdx_affect!(integrator)
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
 
+    
     Ac = p.tube.Ac
-    δ = p.vapor.δ
-    M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac .* ((p.tube.d .- 2 .* δ) ./ p.tube.d) .^2
-    # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+    d = p.tube.d
+    δstart = p.vapor.δstart
+    δend = p.vapor.δend
+    Lfilm_start = p.vapor.Lfilm_start
+    Lfilm_end = p.vapor.Lfilm_end
 
-    unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); liquidθtovec(p.liquid.θarrays)];
+    δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
+    δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
+
+    volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
+    M = PtoD.(p.vapor.P) .* volume_vapor
+
+    # Ac = p.tube.Ac
+    # δ = p.vapor.δ
+    # M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac .* ((p.tube.d .- 2 .* δ) ./ p.tube.d) .^2
+    # # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+
+    # u=[XMδLtovec(X0,dXdt0,M,δstart,δend,Lfilm_start,Lfilm_end); liquidθtovec(sys0.liquid.θarrays)];
+    unew=[XMδLtovec(p.liquid.Xp,p.liquid.dXdt,M,δstart,δend,Lfilm_start,Lfilm_end); liquidθtovec(p.liquid.θarrays)];
 
     resize!(integrator.u,size(unew,1)::Int)
     integrator.u = deepcopy(unew)

@@ -11,21 +11,32 @@ function vaporMergingAffect!(integrator)
     merge_flags = getVaporMergeFlags(δv,p)
     indexmergingsite = sort(findall(x->x == true, merge_flags),rev = true)
 
+    # println(indexmergingsite)
+
+    # println(length(p.liquid.Xarrays))
+
+
     for i in indexmergingsite
         p = vaporMerging(p,i)
     end
-
-    # println(length(p.liquid.Xarrays))
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
 
     Ac = p.tube.Ac
-    δ = p.vapor.δ
-    M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac .* ((p.tube.d .- 2 .* δ) ./ p.tube.d) .^2
-    # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
+    d = p.tube.d
+    δstart = p.vapor.δstart
+    δend = p.vapor.δend
+    Lfilm_start = p.vapor.Lfilm_start
+    Lfilm_end = p.vapor.Lfilm_end
 
-    unew=[XMδtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δ); liquidθtovec(p.liquid.θarrays)];
+    δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
+    δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
+
+    volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
+    M = PtoD.(p.vapor.P) .* volume_vapor
+
+    unew=[XMδLtovec(p.liquid.Xp,p.liquid.dXdt,M,δstart,δend,Lfilm_start,Lfilm_end); liquidθtovec(p.liquid.θarrays)];
 
     resize!(integrator.u,size(unew,1)::Int)
     integrator.u = deepcopy(unew)
@@ -49,30 +60,37 @@ function vaporMerging(p,i)
 
 
 # get compensated L of merged liquid slug for mass conservation
-    left_index = i > 1 ? i-1 : length(Lvaporplug)
-    right_index = i < length(Lvaporplug) ? i+1 : 1
+    # left_index = i > 1 ? i-1 : length(Lvaporplug)
+    right_index = [2:length(Lvaporplug);1]
 
-    Mperlength_left = getMperlength(p,left_index)
-    Mperlength_right = getMperlength(p,right_index)
+    # Mperlength_left = getMperlength(p,left_index)
+    # Mperlength_right = getMperlength(p,right_index)
 
-    Mfilm = getMfilm(p)
-    Mvapor = getMvapor(p)
-    Mliquid = getMliquid(p)
-    # Mmerged = Mfilm[i]+Mvapor[i]
+    # Mfilm = getMfilm(p)
+    # Mvapor = getMvapor(p)
+    # Mliquid = getMliquid(p)
+    # # Mmerged = Mfilm[i]+Mvapor[i]
 
-    MvaporPreMerging = Mvapor[i] + Mvapor[right_index]
-    MfilmPreMerging = Mfilm[i] + Mfilm[right_index]
+    # MvaporPreMerging = Mvapor[i] + Mvapor[right_index]
+    # MfilmPreMerging = Mfilm[i] + Mfilm[right_index]
 
-    MvaporNew = MvaporPreMerging
-    MfilmNew = MfilmPreMerging + Mliquid[i]
+    # MvaporNew = MvaporPreMerging
+    # MfilmNew = MfilmPreMerging + Mliquid[i]
 
-    LvaporNew = Lvaporplug[i] + Lliquidslug[i] + Lvaporplug[right_index]
-    δareaNew = MfilmNew ./ LvaporNew ./ p.liquid.ρ
-    δNewOne = getδFromδarea(p.tube.Ac,p.tube.d,δareaNew)
+    # LvaporNew = Lvaporplug[i] + Lliquidslug[i] + Lvaporplug[right_index]
+    # δareaNew = MfilmNew ./ LvaporNew ./ p.liquid.ρ
+    # δNewOne = getδFromδarea(p.tube.Ac,p.tube.d,δareaNew)
 
-    PNewOne = DtoP(MvaporNew/LvaporNew/(Ac-δareaNew))
+    # PNewOne = DtoP(MvaporNew/LvaporNew/(Ac-δareaNew))
+
+    # δstart_NewOne = p.vapor.δstart[i]
+    # δend_NewOne = p.vapor.δend[right_index[i]]
+    # PNewOne = DtoP(MvaporNew/LvaporNew/(Ac-δareaNew))
 
     systemp = deepcopy(p)
+
+    # println(length(Lvaporplug))
+    # println(i)
 
 # delete ith liquid slug
     splice!(systemp.liquid.Xp,i)
@@ -83,18 +101,42 @@ function vaporMerging(p,i)
     # splice!(systemp.vapor.δ,i)
     # splice!(systemp.vapor.P,i)
 
-    if i != length(systemp.liquid.Xp)
-        splice!(systemp.vapor.δ,i:i+1,[δNewOne])
-        splice!(systemp.vapor.P,i:i+1,[PNewOne])
-    else
-        splice!(systemp.liquid.δ,length(systemp.liquid.δ));
-        splice!(systemp.liquid.δ,1);
-        insert!(systemp.liquid.δ,1,δNewOne)
+    # println(length(systemp.liquid.Xp))
 
-        splice!(systemp.liquid.P,length(systemp.liquid.P));
-        splice!(systemp.liquid.P,1);
-        insert!(systemp.liquid.P,1,PNewOne)
-    end
+    if i != length(p.liquid.Xp)
+        splice!(systemp.vapor.δstart,right_index[i])
+        splice!(systemp.vapor.δend,i)
+        splice!(systemp.vapor.Lfilm_start,right_index[i])
+        splice!(systemp.vapor.Lfilm_end,i)    
+        splice!(systemp.vapor.P,i:i+1,[(systemp.vapor.P[i]+systemp.vapor.P[right_index[i]])/2])
+
+        else
+            # splice!(systemp.vapor.δstart,right_index[i])
+            splice!(systemp.vapor.δend,i)
+            # splice!(systemp.vapor.Lfilm_start,right_index[i])
+            splice!(systemp.vapor.Lfilm_end,i)   
+            
+            splice!(systemp.vapor.δstart,length(systemp.vapor.δstart));
+            splice!(systemp.vapor.δstart,1);
+            insert!(systemp.vapor.δstart,1,p.vapor.δstart[end])
+
+            splice!(systemp.vapor.Lfilm_start,length(systemp.vapor.Lfilm_start));
+            splice!(systemp.vapor.Lfilm_start,1);
+            insert!(systemp.vapor.Lfilm_start,1,p.vapor.Lfilm_start[end])
+
+            splice!(systemp.vapor.P,length(systemp.vapor.P));
+            splice!(systemp.vapor.P,1);
+            insert!(systemp.vapor.P,1,(p.vapor.P[i]+p.vapor.P[right_index[i]])/2)
+        end
+    # else
+    #     splice!(systemp.liquid.δ,length(systemp.liquid.δ));
+    #     splice!(systemp.liquid.δ,1);
+    #     insert!(systemp.liquid.δ,1,δNewOne)
+
+    #     splice!(systemp.liquid.P,length(systemp.liquid.P));
+    #     splice!(systemp.liquid.P,1);
+    #     insert!(systemp.liquid.P,1,PNewOne)
+    # end
 
     return deepcopy(systemp)
 end
@@ -105,6 +147,8 @@ function getVaporMergeFlags(δv,sys)
     numofliquidslug = length(sys.liquid.Xp)
     numofmergingsite = numofliquidslug
     merge_flags = Array{Bool,1}(undef, numofmergingsite)
+
+# println(numofliquidslug)
 
     # Xpvapor = getXpvapor(sys.liquid.Xp,sys.tube.L,sys.tube.closedornot)
     Xp = sys.liquid.Xp
