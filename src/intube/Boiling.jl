@@ -60,7 +60,7 @@ function boiling_affect!(integrator)
                 # θinsert = PtoT.(Pinsert)
 
 
-                p = nucleateboiling(p,(p.wall.Xstations[i]-p.tube.d,p.wall.Xstations[i]+p.tube.d),Pinsert) # P need to be given from energy equation
+                p = nucleateboiling(p,(p.wall.Xstations[i]-2p.tube.d,p.wall.Xstations[i]+2p.tube.d),Pinsert) # P need to be given from energy equation
             # end
         end
 

@@ -4,31 +4,18 @@ function merging_affect!(integrator)
 
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
-    # δv = p.tube.d > (integrator.dt*maximum(p.liquid.dXdt)[1]) ? p.tube.d : (integrator.dt*maximum(p.liquid.dXdt)[1])
-    δv = p.tube.d
-    # println(δv)
-    L = p.tube.L;
+    δv = 2p.tube.d
 
     merge_flags = getmerge_flags(δv,p)
     indexmergingsite = sort(findall(x->x == true, merge_flags),rev = true)
 
-    # println(indexmergingsite)
-
-    # println(length(p.liquid.Xarrays))
-    # println(length(p.liquid.Xp))
-
     for i in indexmergingsite
-        # println("merged! in", i ," at ",integrator.t)
         p = merging(p,i)
     end
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
-    # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
 
     Ac = p.tube.Ac
-    # δ = p.vapor.δ
-    # M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac .* ((p.tube.d .- 2 .* δ) ./ p.tube.d) .^2
-    # # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
 
     d = p.tube.d
     δstart = p.vapor.δstart
@@ -41,10 +28,6 @@ function merging_affect!(integrator)
 
     volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
     M = PtoD.(p.vapor.P) .* volume_vapor
-    # ρ = M ./ volume_vapor
-    # P = DtoP.(ρ)
-
-    # println(p.liquid.Xp)
 
     unew=[XMδLtovec(p.liquid.Xp,p.liquid.dXdt,M,δstart,δend,Lfilm_start,Lfilm_end); liquidθtovec(p.liquid.θarrays)];
 
@@ -56,7 +39,7 @@ function merging_condition(u,t,integrator)     # only for closed loop tube
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
     # δv = p.tube.d > (integrator.dt*maximum(p.liquid.dXdt)[1]) ? p.tube.d : (integrator.dt*maximum(p.liquid.dXdt)[1])
-    δv = p.tube.d
+    δv = 2p.tube.d
 
     sys = deepcopy(getcurrentsys(integrator.u,integrator.p));
 
@@ -75,29 +58,11 @@ function merging(p,i)
 
 # get compensated L of merged liquid slug for mass conservation
     left_index = i > 1 ? i-1 : length(Lvaporplug)
-    right_index = i < length(Lvaporplug) ? i+1 : 1
-
-    # Mperlength_left = getMperlength(p,left_index)
-    # Mperlength_right = getMperlength(p,right_index)
-
-    # Mfilm = getMfilm(p)
-    # Mvapor = getMvapor(p)
-    # Mmerged = Mfilm[i]+Mvapor[i]
-
-    # Lliquid_adjust = (Mmerged - Mperlength_left*Lvaporplug[i]/2 - Mperlength_right*Lvaporplug[i]/2) / (ρₗ*Ac - Mperlength_left/2 - Mperlength_right/2)
-    Lliquid_adjust = 0.0
-
-    # Xpnewone = (i != 1) ? (mod((p.liquid.Xp[i-1][1] .+ Lvaporplug[i]/2 .- Lliquid_adjust/2),L), mod((p.liquid.Xp[i][end] .- Lvaporplug[i]/2 .+ Lliquid_adjust/2),L)) : (mod((p.liquid.Xp[end][1] .+ Lvaporplug[i]/2 .- Lliquid_adjust/2),L), mod((p.liquid.Xp[i][end] .- Lvaporplug[i]/2 .+ Lliquid_adjust/2),L))
-    # simplified Xpnewone
-    δv = p.tube.d
-    # L_diff = mod((p.liquid.Xp[i][1] - p.liquid.Xp[left_index][2]),L) - δv
+  
+    δv = 2p.tube.d
     L_diff = δv
-    # println(L_diff)
+    
     Xpnewone = mod(p.liquid.Xp[left_index][1]+L_diff/2,L), mod(p.liquid.Xp[i][end] - L_diff/2,L)
-    # println(Xpnewone)
-    # println()
-    # Xpnewone = (i != 1) ? (mod(p.liquid.Xp[i-1][1]-L_diff,L), mod(p.liquid.Xp[i][end] - p.tube.d/2,L)) : mod.((p.liquid.Xp[end][1] + p.tube.d/2,p.liquid.Xp[i][end]- p.tube.d/2),L)
-    # Xpnewone = (i != 1) ? (mod(p.liquid.Xp[i-1][1],L), mod(p.liquid.Xp[i][end],L)) : mod.((p.liquid.Xp[end][1],p.liquid.Xp[i][end]),L)
     dXdtnewonevalue = (i != 1) ? (p.liquid.dXdt[i-1][1]*Lliquidslug[i-1] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[i-1]+Lliquidslug[i]) : (p.liquid.dXdt[end][1]*Lliquidslug[end] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[end]+Lliquidslug[i])
         #    println("hahaha")
 

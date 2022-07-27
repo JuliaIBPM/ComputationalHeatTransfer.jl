@@ -118,6 +118,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             A_dδdt_left_vapor[1] = A_dδdt_right_liquid[end]
 
             dMdt_latent_start,dMdt_sensible,dMdt_latent_end = dMdtdynamicsmodel(Xpvapor,sys)
+            dMdt_latent_start_positive,dMdt_sensible_positive,dMdt_latent_end_positive = dMdtdynamicsmodel_positive(Xpvapor,sys)
 
 
             F_start = ρₗ .* Ac .* 4 .* δstart .* (d .- δstart) ./ (d^2)
@@ -129,8 +130,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             L0threshold_film = 3e-4
             L0threshold_pure_vapor = 3e-4
 
-            dLdt_start_normal = (-dMdt_latent_start .* (1 .- Eratio) - 0*ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start - v_vapor_left
-            dLdt_end_normal = (-dMdt_latent_end .* (1 .- Eratio) + 0*ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end + v_vapor_right
+            dLdt_start_normal = (-dMdt_latent_start .* Eratio) ./ F_start - v_vapor_left
+            dLdt_end_normal = (-dMdt_latent_end .* Eratio) ./ F_end + v_vapor_right
 
             # dLdt_start_normal = (-dMdt_latent_start .* (1 .- Eratio) - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start
             # dLdt_end_normal = (-dMdt_latent_end .* (1 .- Eratio) + ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end 
@@ -205,8 +206,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             # dLdt_start = (-dMdt_latent_start .* (1 .- Eratio) - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start .* heaviside_L_start
             # dLdt_end = (-dMdt_latent_end .* (1 .- Eratio) + ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end .* heaviside_L_end
 
-            dδdt_start_normal = (-dMdt_latent_start .* Eratio) ./ (C_start .* Lfilm_start)
-            dδdt_end_normal = (-dMdt_latent_end .* Eratio) ./ (C_end .* Lfilm_end)
+            dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start .* Eratio)) ./ (C_start .* Lfilm_start)
+            dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_start .* Eratio)) ./ (C_end .* Lfilm_end)
 
             he_dδdt_start_positive = dδdt_start_normal .> 0
             he_dδdt_end_positive = dδdt_end_normal .> 0
@@ -326,6 +327,64 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
             return dMdt_latent_start,dMdt_sensible,dMdt_latent_end
 end
 
+function dMdtdynamicsmodel_positive(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSystem)
+
+    dMdt_sensible=zeros(length(Xpvapor))
+    dMdt_latent_start=zeros(length(Xpvapor))
+    dMdt_latent_end=zeros(length(Xpvapor))
+
+    L = sys.tube.L
+
+    peri = sys.tube.peri
+    Ac = sys.tube.Ac
+    k = sys.vapor.k
+
+    Lfilm_start = sys.vapor.Lfilm_start
+    Lfilm_end = sys.vapor.Lfilm_end
+
+    P = sys.vapor.P
+    θarrays = sys.liquid.θarrays
+    Xarrays = sys.liquid.Xarrays
+
+    θ = PtoT.(P)
+
+    Hfg = PtoHfg.(P)
+
+    
+    H_interp = sys.mapping.H_interp_liquidtowall
+    θ_wall_interp = sys.mapping.θ_interp_walltoliquid
+
+    dx_wall = sys.wall.Xarray[2]-sys.wall.Xarray[1]
+
+    Lvapor = XptoLvaporplug(sys.liquid.Xp,sys.tube.L,sys.tube.closedornot)
+    Lvapor_pure = max.(Lvapor - Lfilm_start - Lfilm_end,0.0)
+
+    for i = 1:length(Xpvapor)
+        Nstart = Int64(max(2 , div(Lfilm_start[i],dx_wall)))
+        heatflux_start = quad_trap_positive(H_interp,θ_wall_interp,θ[i],Xpvapor[i][1],mod(Xpvapor[i][1]+Lfilm_start[i],L),L,Nstart)
+
+        Nvapor_pure = Int64(max(2 , div(Lvapor_pure[i],dx_wall)))
+        heatflux_pure_vapor = quad_trap_positive(H_interp,θ_wall_interp,θ[i],mod(Xpvapor[i][1]+Lfilm_start[i],L),mod(Xpvapor[i][2]-Lfilm_end[i],L),L,Nvapor_pure)
+
+        Nend = Int64(max(2 , div(Lfilm_end[i],dx_wall)))
+        heatflux_end = quad_trap_positive(H_interp,θ_wall_interp,θ[i],mod(Xpvapor[i][2]-Lfilm_end[i],L),Xpvapor[i][2],L,Nend)
+
+        slope_r = getslope(θarrays[i][2],θarrays[i][1],Xarrays[i][2],Xarrays[i][1])
+        slope_l = (i == 1) ? getslope(θarrays[1][end],θarrays[1][end-1],Xarrays[1][end],Xarrays[1][end-1]) : getslope(θarrays[i-1][end],θarrays[i-1][end-1],Xarrays[i-1][end],Xarrays[i-1][end-1])
+
+
+        axial_rhs_end = Ac*k*slope_r /Hfg[i]
+        axial_rhs_start = Ac*k*(-slope_l) /Hfg[i]
+
+        dMdt_latent_start[i] = heatflux_start*peri/Hfg[i] + axial_rhs_start
+
+        dMdt_sensible[i] = heatflux_pure_vapor*peri/Hfg[i]
+
+        dMdt_latent_end[i] = heatflux_end*peri/Hfg[i] + axial_rhs_end
+        
+        end
+            return dMdt_latent_start,dMdt_sensible,dMdt_latent_end
+end
 
 function liquidmodel(p::PHPSystem)
     sys = deepcopy(p)
@@ -546,10 +605,26 @@ function quad_trap(H_interp,θ_interp,θvapor_one, a,b,L,N)
     return int
 end
 
+function quad_trap_positive(H_interp,θ_interp,θvapor_one, a,b,L,N) 
+    h = mod((b-a),L)/N
+    
+    # println(h)
+
+    H_interp(a)*(θ_interp(a)-θvapor_one)
+    # println(b)
+
+    int = maximum([h * ( H_interp(a)*(θ_interp(a)-θvapor_one) + H_interp(b)*(θ_interp(b)-θvapor_one) ) / 2, 0.0])
+    for k=1:N-1
+        xk = mod((b-a),L) * k/N + a
+        int = int + maximum([h*H_interp(mod(xk,L))*(θ_interp(mod(xk,L))-θvapor_one),0.0])
+    end
+    return int
+end
+
 function integrator_to_Harray(inte)
     sys_to_Harray(inte.p)
 end
 
 getslope(y2,y1,x2,x1) = (y2-y1)/(x2-x1)
 
-heaviside(x::AbstractFloat) = ifelse(x < 0, zero(x), ifelse(x > 0, one(x), oftype(x,0.5)))
+heaviside(x::AbstractFloat) = ifelse(x < 0, zero(x), ifelse(x > 0, one(x), oftype(x,0.0)))
