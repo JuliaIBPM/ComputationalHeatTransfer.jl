@@ -46,6 +46,7 @@ function getcurrentsys(u,sys0)
 
     volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
     ρ = M ./ volume_vapor
+    # println(M)
     P = DtoP.(ρ)
   
     sysnew.vapor.P = P

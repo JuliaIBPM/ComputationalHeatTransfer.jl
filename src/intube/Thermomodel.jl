@@ -127,11 +127,11 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             F_end = ρₗ .* Ac .* 4 .* δend .* (d .- δend) ./ (d^2)
             C_end = ρₗ .* Ac .* 4 .* (d .- 2δend) ./ (d^2)
 
-            L0threshold_film = 3e-4
-            L0threshold_pure_vapor = 3e-4
+            L0threshold_film = 4e-4
+            L0threshold_pure_vapor = 1e-3
 
-            dLdt_start_normal = (-dMdt_latent_start .* Eratio) ./ F_start - v_vapor_left
-            dLdt_end_normal = (-dMdt_latent_end .* Eratio) ./ F_end + v_vapor_right
+            dLdt_start_normal = (-dMdt_latent_start_positive .* Eratio) ./ F_start - v_vapor_left
+            dLdt_end_normal = (-dMdt_latent_end_positive .* Eratio) ./ F_end + v_vapor_right
 
             # dLdt_start_normal = (-dMdt_latent_start .* (1 .- Eratio) - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start
             # dLdt_end_normal = (-dMdt_latent_end .* (1 .- Eratio) + ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end 
@@ -206,8 +206,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             # dLdt_start = (-dMdt_latent_start .* (1 .- Eratio) - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start .* heaviside_L_start
             # dLdt_end = (-dMdt_latent_end .* (1 .- Eratio) + ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end .* heaviside_L_end
 
-            dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start .* Eratio)) ./ (C_start .* Lfilm_start)
-            dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_start .* Eratio)) ./ (C_end .* Lfilm_end)
+            dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start)
+            dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end)
 
             he_dδdt_start_positive = dδdt_start_normal .> 0
             he_dδdt_end_positive = dδdt_end_normal .> 0
@@ -223,7 +223,9 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             # dδdt_start = (δstart < [δfilm/3] && dδdt_start_normal < [0]) || (δstart > [δfilm*3] && dδdt_start_normal > [0]) ? 0.0 : dδdt_start_normal
             # dδdt_end = (δend < [δfilm/3] && dδdt_end_normal < [0]) || (δend > [δfilm*3] && dδdt_end_normal > [0]) ? 0.0 : dδdt_end_normal
 
-
+            # println(maximum(abs.(dMdt_latent_start)))
+            # println(maximum(abs.(dMdt_sensible)))
+            # println(maximum(abs.(dMdt_latent_end)))
 
             du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt_latent_start+dMdt_sensible+dMdt_latent_end
             du[5*numofliquidslug+1:6*numofliquidslug] .= dδdt_start # equals to 0 for now
