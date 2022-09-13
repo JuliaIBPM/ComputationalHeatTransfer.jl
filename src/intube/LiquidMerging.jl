@@ -116,40 +116,6 @@ function merging(p,i)
     (i != 1) ? splice!(systemp.liquid.θarrays,i-1) : splice!(systemp.liquid.θarrays,length(systemp.liquid.θarrays));
     (i != 1) ? insert!(systemp.liquid.θarrays,i-1,θarraysnewone) : insert!(systemp.liquid.θarrays,length(systemp.liquid.θarrays)+1,θarraysnewone);
 
-    # if i == 1
-        # println("dx",Xarraysnewone[2]-Xarraysnewone[1])
-        # println("Lx",Xarraysnewone[end]-Xarraysnewone[1])
-        # println("systemp.liquid.Xarrays",systemp.liquid.Xarrays)
-        # println("systemp.liquid.θarrays",systemp.liquid.θarrays)
-    # end
-    # println(sum(getMfilm(p)))
-    # println(sum(getMfilm(systemp)))
-    # println(sum(getMvapor(p)))
-    # println(sum(getMvapor(systemp)))
-    # println(sum(getMfilm(p))+sum(getMvapor(p)))
-    # println(sum(getMfilm(systemp))+sum(getMvapor(systemp)))
-    # println(getMliquid(p))
-    # println(getMliquid(systemp))
-    # println(p.vapor.δ)
-    # println(systemp.vapor.δ)
-    # println(systemp.vapor.P)
-    # println(XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot))
-    # println(XptoLvaporplug(systemp.liquid.Xp,systemp.tube.L,systemp.tube.closedornot))
-
-    # println("old ", p.liquid.Xp[left_index], p.liquid.Xp[i])
-    # println("old ", p.liquid.dXdt[left_index], p.liquid.dXdt[i])
-    # println("new ",systemp.liquid.Xp[left_index])
-    
-
-# test
-    # Mfilmnew = getMfilm(systemp)
-    # Mvapornew = getMvapor(systemp)
-    # if i == 1
-    #     println(Mfilmnew[i])
-    #     # println(Mvapornew[i])
-    #     println(Mfilmnew[end])
-    #     # println(Mvapornew[end])
-    # end
     return deepcopy(systemp)
 end
 
@@ -170,8 +136,7 @@ function getmerge_flags(δv,sys)
         left_index = i > 1 ? i-1 : numofliquidslug
      # merging bubble length threshold
         merge_flags[i] = mod(Xpvapor[i][2] + dXdt[i][1]*tstep - Xpvapor[i][1] - dXdt[left_index][2]*tstep, sys.tube.L) < δv || mod(Xpvapor[i][2] - Xpvapor[i][1],sys.tube.L) < δv 
-        # merge_flags[i] = ((Xpvapor[i][2] - Xpvapor[i][1]) < δv && (Xpvapor[i][2] - Xpvapor[i][1]) >= 0) || ((Xpvapor[i][2] - Xpvapor[i][1] + sys.tube.L) < δv && (Xpvapor[i][2] - Xpvapor[i][1]) < 0) ? true : false
-
+    
     end
 
     return merge_flags

@@ -57,9 +57,6 @@ function fixdx_affect!(integrator)
     Lliquid = XptoLliquidslug(p.liquid.Xp,sys.tube.L)
     Nliquid =  ceil.(Int, Lliquid./p.tube.d)
 
-    # println(p.liquid.Xarrays[indexReconstructSite[1]])
-    # println(indexReconstructSite)
-
     for i in indexReconstructSite
         println("reconstruct dx! in", i ," at ",integrator.t)
 
@@ -68,7 +65,6 @@ function fixdx_affect!(integrator)
     end
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
-    # M = nondi_PtoD.(p.vapor.P) .* Lvaporplug
 
     
     Ac = p.tube.Ac
@@ -84,12 +80,6 @@ function fixdx_affect!(integrator)
     volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
     M = PtoD.(p.vapor.P) .* volume_vapor
 
-    # Ac = p.tube.Ac
-    # δ = p.vapor.δ
-    # M = PtoD.(p.vapor.P) .* Lvaporplug .* Ac .* ((p.tube.d .- 2 .* δ) ./ p.tube.d) .^2
-    # # M = p.vapor.P.^(1/p.vapor.γ).* Lvaporplug
-
-    # u=[XMδLtovec(X0,dXdt0,M,δstart,δend,Lfilm_start,Lfilm_end); liquidθtovec(sys0.liquid.θarrays)];
     unew=[XMδLtovec(p.liquid.Xp,p.liquid.dXdt,M,δstart,δend,Lfilm_start,Lfilm_end); liquidθtovec(p.liquid.θarrays)];
 
     resize!(integrator.u,size(unew,1)::Int)

@@ -11,14 +11,6 @@ function randomXp(tube;numofslugs=32,chargeratio=0.46,σ_charge=0.1)
     L_persection=L/numofslugs
 
     Ls = abs.((rand(numofslugs) .- 0.5).*σ_persection .+ L_perslug)
-    # println(L_persection,σ_persection)
-    # if chargeratio <= 0.5
-    #     Ls = abs.(randn(numofslugs).*σ_persection .+ L_perslug)
-    # else
-    #     Ls = ((2*chargeratio-1) .+ rand(numofslugs).*(2-2*chargeratio)).*L_persection
-    # end
-
-    # println(Ls)
 
     Xp1s = zeros(numofslugs);
     Xp2s = deepcopy(Xp1s);

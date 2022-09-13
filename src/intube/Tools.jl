@@ -266,30 +266,6 @@ end
 
 function vectoXMδL(u::Array{Float64,1})
 if mod(length(u),9) == 2
-#     maxindex = Integer( (length(u) - 2)/6 )
-
-#     Xp = map(tuple, zeros(maxindex), zeros(maxindex))
-#     dXdt = map(tuple, zeros(maxindex), zeros(maxindex))
-#     M = zeros(maxindex+1)
-#     δ = zeros(maxindex+1)
-
-#     for i = 1:maxindex
-
-#         # input Xp
-#         Xp[i] = (u[2*i-1],u[2*i])
-
-#         # input dXdt
-#         dXdt[i] = (u[2*maxindex + 2*i-1],u[2*maxindex + 2*i])
-#     end
-
-#     for i = 1:(maxindex+1)
-
-#         # input M
-#         M[i] = u[4*maxindex + i]
-#         δ[i] = u[5*maxindex + 1 + i]
-#     end
-
-#     return Xp,dXdt,M,δ
     return "haven't finish new open end code"
 end
 

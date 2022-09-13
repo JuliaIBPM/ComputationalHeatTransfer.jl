@@ -63,34 +63,8 @@ function vaporMerging(p,i)
     # left_index = i > 1 ? i-1 : length(Lvaporplug)
     right_index = [2:length(Lvaporplug);1]
 
-    # Mperlength_left = getMperlength(p,left_index)
-    # Mperlength_right = getMperlength(p,right_index)
-
-    # Mfilm = getMfilm(p)
-    # Mvapor = getMvapor(p)
-    # Mliquid = getMliquid(p)
-    # # Mmerged = Mfilm[i]+Mvapor[i]
-
-    # MvaporPreMerging = Mvapor[i] + Mvapor[right_index]
-    # MfilmPreMerging = Mfilm[i] + Mfilm[right_index]
-
-    # MvaporNew = MvaporPreMerging
-    # MfilmNew = MfilmPreMerging + Mliquid[i]
-
-    # LvaporNew = Lvaporplug[i] + Lliquidslug[i] + Lvaporplug[right_index]
-    # δareaNew = MfilmNew ./ LvaporNew ./ p.liquid.ρ
-    # δNewOne = getδFromδarea(p.tube.Ac,p.tube.d,δareaNew)
-
-    # PNewOne = DtoP(MvaporNew/LvaporNew/(Ac-δareaNew))
-
-    # δstart_NewOne = p.vapor.δstart[i]
-    # δend_NewOne = p.vapor.δend[right_index[i]]
-    # PNewOne = DtoP(MvaporNew/LvaporNew/(Ac-δareaNew))
 
     systemp = deepcopy(p)
-
-    # println(length(Lvaporplug))
-    # println(i)
 
 # delete ith liquid slug
     splice!(systemp.liquid.Xp,i)
@@ -98,10 +72,6 @@ function vaporMerging(p,i)
     splice!(systemp.liquid.Xarrays,i)
     splice!(systemp.liquid.θarrays,i)
 
-    # splice!(systemp.vapor.δ,i)
-    # splice!(systemp.vapor.P,i)
-
-    # println(length(systemp.liquid.Xp))
 
     if i != length(p.liquid.Xp)
         splice!(systemp.vapor.δstart,right_index[i])
@@ -128,15 +98,7 @@ function vaporMerging(p,i)
             splice!(systemp.vapor.P,1);
             insert!(systemp.vapor.P,1,(p.vapor.P[i]+p.vapor.P[right_index[i]])/2)
         end
-    # else
-    #     splice!(systemp.liquid.δ,length(systemp.liquid.δ));
-    #     splice!(systemp.liquid.δ,1);
-    #     insert!(systemp.liquid.δ,1,δNewOne)
 
-    #     splice!(systemp.liquid.P,length(systemp.liquid.P));
-    #     splice!(systemp.liquid.P,1);
-    #     insert!(systemp.liquid.P,1,PNewOne)
-    # end
 
     return deepcopy(systemp)
 end

@@ -111,21 +111,6 @@ end
     extend_wall_Xarray = [0.0;sys.wall.Xarray;sys.tube.L]
     extend_wall_θarray = [(sys.wall.θarray[1]+sys.wall.θarray[end])/2;sys.wall.θarray;(sys.wall.θarray[1]+sys.wall.θarray[end])/2]
 
-    # println(Xpvapor)
-    # println(findmax(X_inner_final))
-    # X_test = deepcopy(X_inner_final)
-    # for i = 1:length(X_inner_final)-1
-    #     X_test[i] = X_inner_final[i+1] - X_inner_final[i]
-    # end
-    # println(X_inner_final[2360:2380])
-    # # println(X_inner_final[end-10:end])
-    # println(findmin(X_test))
-    # println(Xpvapor[6])
-    # i = 6
-    # println([Xpvapor[i][1],Xpvapor[i][1]+Lfilm_start[i],
-    # Xpvapor[i][1]+Lfilm_start[i],Xpvapor[i][end]-Lfilm_end[i],
-    # Xpvapor[i][end]-Lfilm_end[i],Xpvapor[i][end]])
-
     Interpolations.deduplicate_knots!(X_inner_final,move_knots = true)
     Interpolations.deduplicate_knots!(extend_wall_Xarray,move_knots = true)
     Interpolations.deduplicate_knots!(X_inner_pres_final,move_knots = true)

@@ -41,9 +41,6 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     height = getheight(Xp,sys.tube.L2D,sys.tube.angle)
     Xpvapor = getXpvapor(Xp,sys.tube.L,sys.tube.closedornot)
 
-    # volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
-
-
 
     ρₗ = p.liquid.ρ
 # get differential equation factors
@@ -105,11 +102,6 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             v_vapor_left[1] = v_liquid_right[end]
             v_vapor_right = v_liquid_left
 
-            # println(δstart)
-            # println(δend)
-            # println(Adeposit)
-            # println(Ac)
-
             A_dδdt_right_vapor = [elem[1] for elem in Adeposit]
 
             A_dδdt_right_liquid = [elem[2] for elem in Adeposit]
@@ -133,9 +125,6 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             dLdt_start_normal = (-dMdt_latent_start_positive .* Eratio) ./ F_start - v_vapor_left
             dLdt_end_normal = (-dMdt_latent_end_positive .* Eratio) ./ F_end + v_vapor_right
 
-            # dLdt_start_normal = (-dMdt_latent_start .* (1 .- Eratio) - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start
-            # dLdt_end_normal = (-dMdt_latent_end .* (1 .- Eratio) + ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end 
-
             he_start_short = Bool.(heaviside.(-Lfilm_start .+ L0threshold_film))
             he_end_short = Bool.(heaviside.(-Lfilm_end .+ L0threshold_film))
             he_start_positive = Bool.(heaviside.(dLdt_start_normal))
@@ -145,14 +134,6 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             dLdt_start = zeros(numofvaporbubble)
             dLdt_end = zeros(numofvaporbubble)
         
-
-            #  println(length(Eratio))
-           
-            # dLdt_start_case1 = 0
-            # dLdt_start_case2 = dLdt_start_normal
-            # dLdt_start_case3 = -v_vapor_left
-            # dLdt_start_case4 = v_vapor_right .- v_vapor_left
-
             for i = 1:numofvaporbubble
                 if he_meet[i]
                     if he_start_short[i]
@@ -160,8 +141,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                     elseif he_start_positive[i]
                         dLdt_start[i] = he_end_short[i] ? v_vapor_right[i] .- v_vapor_left[i] : -v_vapor_left[i]
                         if i == 1 
-                            # println(-v_vapor_left[i],v_vapor_right[i] .- v_vapor_left[i],dLdt_start[i])
-
+     
                         end
                     else
                         dLdt_start[i] = minimum([dLdt_start_normal[i],v_vapor_right[i] .- v_vapor_left[i], -v_vapor_left[i]])
@@ -173,15 +153,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                 end
             end
 
-            # println(F_start )
-
-            # dLdt_start = he_start_short .* dLdt_start_case1 + ((1 .- he_start_short) .* (1 .- he_meet) .+  he_start_short .* (1 .- he_meet) .* he_start_positive .+ (1 .- he_start_short) .* he_meet .* (1 .- he_start_positive)) .* dLdt_start_case2 + (1 .- he_start_short) .* he_meet .* he_start_positive .* (1 .- he_end_short) .* dLdt_start_case3 + (1 .- he_start_short) .* he_meet .* he_start_positive .* he_end_short .* dLdt_start_case4
-
-            # dLdt_end_case1 = 0
-            # dLdt_end_case2 = dLdt_end_normal
-            # dLdt_end_case3 = v_vapor_right
-            # dLdt_end_case4 = -(v_vapor_left .- v_vapor_right)
-
+     
             for i = 1:numofvaporbubble
                 if he_meet[i]
                     if he_end_short[i]
@@ -198,14 +170,6 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                 end
             end
 
-            # dLdt_end = he_end_short .* dLdt_end_case1 + ((1 .- he_end_short) .* (1 .- he_meet) .+ he_end_short .* (1 .- he_meet) .* he_end_positive .+ (1 .- he_end_short) .* he_meet .* (1 .- he_end_positive)).* dLdt_end_case2 + (1 .- he_end_short) .* he_meet .* he_end_positive .* (1 .- he_start_short) .* dLdt_end_case3 + (1 .- he_end_short) .* he_meet .* he_end_positive .* he_start_short .* dLdt_end_case4
-
-            # dLdt_start = (-dMdt_latent_start .* (1 .- Eratio) - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start .* heaviside_L_start .+  (v_vapor_right .- v_vapor_left) .* heaviside_L_total_start
-            # dLdt_end = (-dMdt_latent_end .* (1 .- Eratio) + ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end .* heaviside_L_end .+ (v_vapor_right .- v_vapor_left) .* heaviside_L_total_end
-            
-            # dLdt_start = (-dMdt_latent_start .* (1 .- Eratio) - ρₗ .* A_dδdt_left_vapor  .* v_vapor_left) ./ F_start .* heaviside_L_start
-            # dLdt_end = (-dMdt_latent_end .* (1 .- Eratio) + ρₗ .* A_dδdt_right_vapor .* v_vapor_right) ./ F_end .* heaviside_L_end
-
             dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start)
             dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end)
 
@@ -220,49 +184,11 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             # println((1 .- div.((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive),2)))
             dδdt_end = (1 .- ((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive))) .* dδdt_end_normal
 
-            # dδdt_start = (δstart < [δfilm/3] && dδdt_start_normal < [0]) || (δstart > [δfilm*3] && dδdt_start_normal > [0]) ? 0.0 : dδdt_start_normal
-            # dδdt_end = (δend < [δfilm/3] && dδdt_end_normal < [0]) || (δend > [δfilm*3] && dδdt_end_normal > [0]) ? 0.0 : dδdt_end_normal
-
-            # println(maximum(abs.(dMdt_latent_start)))
-            # println(maximum(abs.(dMdt_sensible)))
-            # println(maximum(abs.(dMdt_latent_end)))
-
             du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt_latent_start+dMdt_sensible+dMdt_latent_end
             du[5*numofliquidslug+1:6*numofliquidslug] .= dδdt_start # equals to 0 for now
             du[6*numofliquidslug+1:7*numofliquidslug] .= dδdt_end # equals to 0 for now
             du[7*numofliquidslug+1:8*numofliquidslug] .= dLdt_start # equals to 0 for now
             du[8*numofliquidslug+1:9*numofliquidslug] .= dLdt_end # equals to 0 for now
-
-            # println(δend[1])
-            # testindex = 10
-            # println(he_start_short[testindex])
-            # println(he_end_short[testindex])
-            # println(he_start_positive[testindex])
-            # println(he_end_positive[testindex])
-            # println(he_meet[testindex])
-            # println(Xpvapor)
-            # println(δstart)
-            # println(Xpvapor[testindex])
-            # println(v_vapor_right[testindex])
-            # println(v_vapor_left[testindex])
-            # println(dMdt_latent_start[testindex])
-            # # println(Lfilm_start[testindex])
-            # println(\delta     film_end[testindex])
-            # # println(Lvaporplug[testindex])
-            # # # # println(he_start_short)
-            # println(dLdt_start[testindex])
-            # println(dLdt_end[testindex])
-            # println(dLdt_end[5])
-            # # println(dLdt_start_case2[67])
-            # # println(dLdt_end[67])
-            # # println(dLdt_end_case2[67])
-            # # println(Lfilm_end)
-            # # println(dLdt_end)
-            # # # # println(dLdt_start_case1[21])
-            # # println(dLdt_end[6])
-            # # # println(dLdt_end_case4[21])
-            # # println(v_vapor_right[6])
-            # # println(v_vapor_left[6])
 
             return du
     end
@@ -445,27 +371,6 @@ function getadjacentT(p::PHPSystem,i::Int64)
     (Tfirst,Tlast)
 end
 
-# """
-#     (Depreciated)
-#     get the array of evaporator's heat flux along the wall if the 1D tube wall model is used.
-# """
-#
-# function getwallWearray(Xarray,p::PHPSystem)
-#
-#     Wearray = zero(deepcopy(Xarray))
-#
-#
-#     for i = 1:length(Xarray)
-#         for j = 1:length(p.evaporator.Xe)
-#             if ifamongone(Xarray[i],p.evaporator.Xe[j])
-#                 Wearray[i] = p.evaporator.We[j]
-#             end
-#         end
-#     end
-#
-#     return Wearray
-# end
-
 
 """
     This is a function to get the laplacian of a vector field u
@@ -489,41 +394,8 @@ function laplacian(u)
 
     unew = A*u
 
-    # #periodic B.C.
-    # if periodic
-    #
-    #     unew[1]   = u[2] - 2*u[1] + u[end]
-    #
-    #     unew[end] = u[1] - 2*u[end] + u[end-1]
-    #
-    # else
-
-    # zero gradient B.C.
-    # unew[1]   = 0.0
-    # unew[end] = 0.0
-    # end
-
     return (unew)
 end
-#
-# function laplacian(u,Ttuple)
-#     unew = deepcopy(u)
-#
-#     dl = ones(length(u)-1)
-#     dr = dl
-#     d  = -2*ones(length(u))
-#
-#     A = Tridiagonal(dl, d, dr)
-#
-#     unew = A*u
-#     # zero gradient B.C.
-#     unew[1]   = (Ttuple[1]-u[1])*tstep
-#     unew[end] = (Ttuple[end]-u[end])*tstep
-#     # end
-#
-#     return (unew)
-# end
-
 
 
 # q'
@@ -567,24 +439,10 @@ function sys_to_Harray(p::PHPSystem)
 
     sys = deepcopy(p)
 
-    # θarray = sys.wall.θarray
-    # γ = sys.vapor.γ
-    # Hₗ = sys.liquid.Hₗ
-    # He = sys.evaporator.He
-    # k = sys.vapor.k
-    # δ = sys.vapor.δ
-    # Hvapor = k ./ δ
-
-
-    # dx = sys.wall.Xarray[2]-sys.wall.Xarray[1]
-
-    # Xarray = sys.wall.Xarray
-    # θ_interp_liquidtowall = sys.mapping.θ_interp_liquidtowall
     H_interp_liquidtowall = sys.mapping.H_interp_liquidtowall
 
     xs =  sys.wall.Xarray
 
-    # dθarray = map(θ_interp_liquidtowall, xs) .- θarray
     Harray  = map(H_interp_liquidtowall, xs)
 
     Harray

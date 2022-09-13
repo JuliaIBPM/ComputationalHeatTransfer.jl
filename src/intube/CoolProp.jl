@@ -16,9 +16,6 @@ Hᵥrange = CoolProp.PropsSI.("H","T",Trange,"Q",1.0,fluid_type);
 Hₗrange = CoolProp.PropsSI.("H","T",Trange,"Q",0.0,fluid_type);
 Hfgrange = Hᵥrange .- Hₗrange
 
-# # modified
-# Hfgrange = Hfgrange .* 0.01
-
 
 T0=295.0;
 D0=CoolProp.PropsSI("D","T",T0,"Q",1.0,fluid_type);
@@ -39,21 +36,3 @@ TtoP = LinearInterpolation(Trange, Prange);
 PtoD = LinearInterpolation(Prange, Drange);
 DtoP = LinearInterpolation(Drange, Prange);
 PtoHfg = LinearInterpolation(Prange, Hfgrange);
-
-
-
-# function nondi_PtoT(nondi_P;P0=103225,T0=273.15,quality=1.0,fluid_type="Butane")
-#     CoolProp.PropsSI("T","P",nondi_P*P0,"Q",quality,fluid_type)/T0
-# end
-#
-# function nondi_TtoP(nondi_T;T0=273.15,P0=103225,quality=1.0,fluid_type="Butane")
-#     CoolProp.PropsSI("P","T",nondi_T*T0,"Q",quality,fluid_type)/P0
-# end
-#
-# function nondi_PtoD(nondi_P;P0=103225,D0=2.75673,quality=1.0,fluid_type="Butane")
-#     CoolProp.PropsSI("D","P",nondi_P*P0,"Q",quality,fluid_type)/D0
-# end
-#
-# function nondi_DtoP(nondi_D;D0=2.75673,P0=103225,quality=1.0,fluid_type="Butane")
-#     CoolProp.PropsSI("P","D",nondi_D*D0,"Q",quality,fluid_type)/P0
-# end
