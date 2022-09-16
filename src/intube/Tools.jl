@@ -7,10 +7,12 @@ ifamongone,ifamong,constructXarrays,
 duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
 Hfilm,getδarea,getδFromδarea,getMvapor,getMfilm,getMliquid,
 getMperlength,getMshortenedfilm,getMshortenedvapor,
-getCa,filmδcorr,getAdeposit
+getCa,filmδcorr,getAdeposit,
+getRTD,getconfig
 
 # using ..Systems
 # using LinearAlgebra
+using XLSX
 
 """
     This function is a sub-function of getheight. This function is to get the actural physical height for one interface
@@ -861,4 +863,30 @@ function getAdeposit(sys,δdeposit)
     end
 
     Adeposit
+end
+
+function getRTD(xf,Onum)
+    if Onum == 1
+        RTD = xf["Raw Data!G3603:N7201"]
+    elseif Onum == 2
+        RTD = xf["Raw Data!U3603:AB7201"]
+    elseif Onum == 3
+        RTD = xf["Raw Data!AI3603:AP7201"]
+    else
+        return error
+    end
+    RTDt = (1:size(RTD,1));
+    
+    RTD,RTDt
+end
+
+function getconfig(filepath)
+    Pindex = findfirst("_P0",filepath)[2]
+    Oindex = findfirst("_O0",filepath)[2]
+    Hindex = findfirst("_O0",filepath)[2]
+    power = parse(Int64,filepath[Pindex+1:Pindex+3])
+    Onum = parse(Int64,filepath[Oindex+1:Oindex+3])
+    Hnum = parse(Int64,filepath[Hindex+1:Hindex+3])
+    
+    Onum, Hnum, power
 end

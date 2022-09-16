@@ -19,10 +19,12 @@ docs/build/
 !docs/src/assets/*.png
 # vim swap files
 *.swp
+# stored data
 *.jld2
 *.jld
-notebooks/Untitled.ipynb
 OHP_blue_gold.gif
-src\tmp.gif
+src/tmp.gif
 *.svg
 *.gif
+*.xlsx
+*.csv
