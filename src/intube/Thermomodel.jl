@@ -30,6 +30,9 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
     δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
 
+    # temporary!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    δfilm = Main.δfilm
+
     δdeposit = δfilm
     Adeposit = getAdeposit(sys,δdeposit)
 
@@ -70,7 +73,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
             for i = 1:numofliquidslug
 
-    # temperary v, need a new momentum equation to solve for it
+    # temperary v, need a new momentum equation to solve for it, but now I have to let it be, for liquid mass conservation
     #  momentum for liquid
                 v_momentum = u[2*numofliquidslug+2*i-1]
 
@@ -170,15 +173,18 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                 end
             end
 
-            dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start)
-            dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end)
+            # dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start) 
+            # dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end)
+
+            dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start)  + (- ρₗ .* A_dδdt_left_vapor .* v_vapor_left + F_start .* v_vapor_left) ./ (C_start .* Lfilm_start) 
+            dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end) - (- ρₗ .* A_dδdt_right_vapor .* v_vapor_right + F_end .* v_vapor_right) ./ (C_end .* Lfilm_end)
 
             he_dδdt_start_positive = dδdt_start_normal .> 0
             he_dδdt_end_positive = dδdt_end_normal .> 0
-            he_dδdt_start_toobig = δstart .> δfilm*3
-            he_dδdt_start_toosmall = δstart .< δfilm/3
-            he_dδdt_end_toobig = δend .> δfilm*3
-            he_dδdt_end_toosmall = δend .< δfilm/3
+            he_dδdt_start_toobig = δstart .> 1e-4
+            he_dδdt_start_toosmall = δstart .< 5e-6
+            he_dδdt_end_toobig = δend .> 1e-4
+            he_dδdt_end_toosmall = δend .< 5e-6
 
             dδdt_start = (1 .- (he_dδdt_start_toosmall .* (1 .- he_dδdt_start_positive) .+ he_dδdt_start_toobig .* he_dδdt_start_positive)) .* dδdt_start_normal
             # println((1 .- div.((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive),2)))
@@ -315,6 +321,7 @@ function dMdtdynamicsmodel_positive(Xpvapor::Array{Tuple{Float64,Float64},1},sys
 end
 
 function liquidmodel(p::PHPSystem)
+    tstep = Main.tstep
     sys = deepcopy(p)
     θarrays = sys.liquid.θarrays
     # nondihv_tonondihl = 0.0046206704347650325 # temperary variable to fix different nondimensionlaization
@@ -322,6 +329,8 @@ function liquidmodel(p::PHPSystem)
     du = zero.(deepcopy(θarrays))
 
     # γ = sys.vapor.γ
+    Ac = p.tube.Ac
+
     Hₗ = sys.liquid.Hₗ
     peri = sys.tube.peri
     α = sys.liquid.α
@@ -334,7 +343,7 @@ function liquidmodel(p::PHPSystem)
     θarray_temp_wall = zero.(deepcopy(θarrays))
 
 
-    for i = 1:length(θarrays)
+    for i in eachindex(θarrays)
 
         Ttuple = getadjacentT(p,i)
 

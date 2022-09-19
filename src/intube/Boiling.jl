@@ -1,4 +1,4 @@
-export boiling_affect!,nucleateboiling
+export boiling_affect!,nucleateboiling,boiling_condition
 # boiling_condition,
 function boiling_condition(u,t,integrator)
     t_interval = 0.1
@@ -24,10 +24,10 @@ function boiling_affect!(integrator)
 
             Δθ = getsuperheat(p.wall.Xstations[i],p)
           
-                push!(boil_hist,[i,integrator.t]);
+                push!(Main.boil_hist,[i,integrator.t]);
                 b_count += 1;
 
-                Pinsert = p.mapping.P_interp_liquidtowall(Xstations[i])
+                Pinsert = p.mapping.P_interp_liquidtowall(p.wall.Xstations[i])
 
                 p = nucleateboiling(p,(p.wall.Xstations[i]-2p.tube.d,p.wall.Xstations[i]+2p.tube.d),Pinsert) # P need to be given from energy equation
         end

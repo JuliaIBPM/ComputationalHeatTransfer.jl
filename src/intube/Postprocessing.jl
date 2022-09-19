@@ -1,5 +1,6 @@
-export getcurrentsys
+export getcurrentsys,getRTD,getconfig,getghist,getthist,getgt,getsysfinal,getwetness,getV,getδ
 
+using Statistics
 
 """
     give a new u and an old system, return a new system sysnew
@@ -88,4 +89,117 @@ function updateXarrays(Xp,θarrays,L)
     end
 
     return Xarrays
+end
+
+
+function getRTD(xf,Onum)
+    if Onum == 1
+        RTD = xf["Raw Data!G3603:N7201"]
+    elseif Onum == 2
+        RTD = xf["Raw Data!U3603:AB7201"]
+    elseif Onum == 3
+        RTD = xf["Raw Data!AI3603:AP7201"]
+    else
+        return error
+    end
+    RTDt = (1:size(RTD,1));
+    
+    RTD,RTDt
+end
+
+function getconfig(filepath)
+    Pindex = findfirst("_P0",filepath)[2]
+    Oindex = findfirst("_O0",filepath)[2]
+    Hindex = findfirst("_O0",filepath)[2]
+    power = parse(Int64,filepath[Pindex+1:Pindex+3])
+    Onum = parse(Int64,filepath[Oindex+1:Oindex+3])
+    Hnum = parse(Int64,filepath[Hindex+1:Hindex+3])
+    
+    Onum, Hnum, power
+end
+
+function getghist(g,H,plate_T_hist)
+    ghist = []
+    for j in eachindex(g)
+        gtemp = []
+        for i in eachindex(plate_T_hist)
+            H(g,plate_T_hist[i])
+        append!(gtemp,deepcopy(g[j]))
+    end
+    push!(ghist,deepcopy(gtemp))
+    end
+    ghist
+end
+
+function getthist(tube_hist)
+    thist = []
+    for i in eachindex(tube_hist)
+        append!(thist,tube_hist[i].t)
+    end
+    thist
+end
+
+function getgt(g,H,plate_T_hist,tube_hist)
+    ghist = getghist(g,H,plate_T_hist)
+    thist = getthist(tube_hist)
+
+    ghist,thist
+end
+
+function getsysfinal(tube_hist)
+    sysfinal = []
+    for tube_i in tube_hist
+        push!(sysfinal, deepcopy(getcurrentsys(tube_i.u,tube_i.p)))
+    end
+    
+    sysfinal
+end
+
+function getwetness(sysfinal)
+    wetness = Float64[]
+    for sysfinali in sysfinal
+        Lvaporplug = XptoLvaporplug(sysfinali.liquid.Xp,sysfinali.tube.L,sysfinali.tube.closedornot)
+        Lvaporsum = sum(Lvaporplug)
+        Ldryvapor = Lvaporplug - sysfinali.vapor.Lfilm_start  - sysfinali.vapor.Lfilm_end
+        Ldrysum = sum(Ldryvapor)
+
+        push!(wetness, 1 - Ldrysum/Lvaporsum)
+    end
+    
+    wetness
+end
+
+function getV(sysfinal)
+    Vabs_avg = Float64[]
+    Vabs_max = Float64[]
+    Vavg = Float64[]
+
+    for sysfinali in sysfinal
+    
+        V = [elem[2] for elem in sysfinali.liquid.dXdt]
+        Vabs = mean(abs.(V))
+        Vmax = maximum(abs.(V))
+        Vrealavg = mean(V)
+        
+        push!(Vabs_avg, Vabs)
+        push!(Vabs_max, Vmax)
+        push!(Vavg, Vrealavg)
+    end
+
+    Vabs_avg,Vavg,Vabs_max
+end
+
+function getδ(sysfinal)
+    δ_avg_start = Float64[]
+    δ_avg_end = Float64[]
+
+    for sysfinali in sysfinal
+        δstart = sysfinali.vapor.δstart
+        δend = sysfinali.vapor.δend
+
+        push!(δ_avg_start, mean(δstart))
+        push!(δ_avg_end, mean(δend))
+    end
+
+    δ_avg_start,δ_avg_end
 end

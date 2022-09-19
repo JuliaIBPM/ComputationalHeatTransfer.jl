@@ -59,6 +59,7 @@ function merging(p,i)
 # get compensated L of merged liquid slug for mass conservation
     left_index = i > 1 ? i-1 : length(Lvaporplug)
   
+    L = p.tube.L
     δv = 2p.tube.d
     L_diff = δv
     
@@ -131,6 +132,7 @@ function getmerge_flags(δv,sys)
 
     Xpvapor = getXpvapor(sys.liquid.Xp,sys.tube.L,sys.tube.closedornot)
     dXdt = sys.liquid.dXdt
+    tstep = Main.tstep
 
     for i in 1:numofmergingsite
         left_index = i > 1 ? i-1 : numofliquidslug

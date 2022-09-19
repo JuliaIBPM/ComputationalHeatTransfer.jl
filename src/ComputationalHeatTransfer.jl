@@ -2,6 +2,8 @@ module ComputationalHeatTransfer
 
 using DocStringExtensions
 using Reexport
+using Revise
+using LinearAlgebra
 
 @reexport using CartesianGrids
 @reexport using ImmersedLayers
@@ -10,7 +12,7 @@ using Reexport
 @reexport using GridUtilities
 
 
-using LinearAlgebra
+# using LinearAlgebra
 #using SparseArrays
 
 export HeatConduction,setstepsizes,timestep,newstate,
@@ -51,7 +53,7 @@ include("utils/forcing.jl")
 include("utils/ohp.jl")
 include("heat_conduction.jl")
 #include("plot_recipes.jl")
-# include("OneDOHP.jl")
+include("OneDOHP.jl")
 # using ..OneDOHP
 
 

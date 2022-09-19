@@ -2,6 +2,8 @@ export ODE_innertube
 
 function ODE_innertube(u,p,t)
 
+    # println(dt)
+
     index_dynamics_end = findfirst(x->abs(x+1e10) <= 10^(-1), u)
 
     # println(u[1:100])

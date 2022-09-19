@@ -1,6 +1,6 @@
 export randomXp
 
-function randomXp(tube;numofslugs=32,chargeratio=0.46,σ_charge=0.1)
+function randomXp(tube::Tube,numofslugs=30,chargeratio=0.46,σ_charge=0.1)
 
     L = tube.L
     Lmin = tube.d
@@ -17,7 +17,7 @@ function randomXp(tube;numofslugs=32,chargeratio=0.46,σ_charge=0.1)
 
     if minimum(Ls) > Lmin && maximum(Ls) < L_persection
 
-        for i = 1:length(Xp1s)
+        for i in eachindex(Xp1s)
             Xp1s[i] = (i-1)*L_persection
             Xp2s[i] = Xp1s[i] + Ls[i]
         end
