@@ -58,15 +58,18 @@ end
 
 function nucleateboiling(sys,Xvapornew,Pinsert)
     ρ = deepcopy(sys.liquid.ρ)
+    Ac = sys.tube.Ac
     d = deepcopy(sys.tube.d)
     Xp = deepcopy(sys.liquid.Xp)
     dXdt = deepcopy(sys.liquid.dXdt)
     δstart = deepcopy(sys.vapor.δstart)
     δend = deepcopy(sys.vapor.δend)
+    # Astart = getδarea(Ac,d,δstart)
+    # Aend = getδarea(Ac,d,δend)
     δfilm_deposit = deepcopy(sys.vapor.δfilm_deposit)
     P = deepcopy(sys.vapor.P)
     L = sys.tube.L
-    Ac = sys.tube.Ac
+    
     Xarrays = sys.liquid.Xarrays
     θarrays = sys.liquid.θarrays
     closedornot = sys.tube.closedornot
@@ -74,11 +77,12 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     Lfilm_end = deepcopy(sys.vapor.Lfilm_end)
 
 
-    Lvaporplug =    XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
+    Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
 
     index = getinsertindex(Xp,(Xvapornew[2]+Xvapornew[1])/2,sys.tube.L,sys.tube.closedornot)
 
-    ρinsert = PtoD(Pinsert)
+    # ρinsert = PtoD(Pinsert)
+    Mvapor = getMvapor(sys)
 
     Linsert = mod(Xvapornew[end] - Xvapornew[1],L)
 
@@ -114,7 +118,20 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     Lliquid_adjust = 0
     Xpnew = getnewXp(Xp,index,Xvapornew,Lliquid_adjust,L,closedornot)
 
-    Pnew = insert!(P,index+1,Pinsert)
+    Lvaporplug_new = XptoLvaporplug(Xpnew,sys.tube.L,sys.tube.closedornot)
+    Astart_new = getδarea(Ac,d,δstart_new)
+    Aend_new = getδarea(Ac,d,δend_new)
+    Volumevapor_new = getVolumevapor(Ac,Astart_new,Aend_new,Lvaporplug_new,Lfilm_start_new,Lfilm_end_new)
+
+    Pnew_left = DtoP(Mvapor[index]/Volumevapor_new[index])
+    Pnew_right = DtoP(Mvapor[loop_plus_index[index]]/Volumevapor_new[loop_plus_index_new[index]])
+
+    # println(P[index-2:index+5])
+
+    # avoid collapse right after boiling
+    Pnew = insert!(P,index+1,maximum([Pinsert,Pnew_left,Pnew_right]))
+    splice!(Pnew,index,Pnew_left)
+    splice!(Pnew,loop_plus_index_new[index],Pnew_right)
 
     Xarraysnew = getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
     θarraysnew = getnewθarrays(index,Xp,Xpnew,Xarrays,θarrays,L,closedornot)
@@ -139,6 +156,8 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
 
     θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall, P_interp_liquidtowall = sys_interpolation(sysnew)
     sysnew.mapping = Mapping(θ_interp_walltoliquid, θ_interp_liquidtowall, H_interp_liquidtowall, P_interp_liquidtowall)
+
+    # println(Pnew[index-2:index+5])
 
 return sysnew
 end

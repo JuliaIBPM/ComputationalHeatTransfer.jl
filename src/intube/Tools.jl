@@ -1,9 +1,4 @@
-# module Tools
-# using CartesianGrids
-
 using CartesianGrids
-
-# println(ScalarData)
 
 export getheight, # get actrual height of the tube
 XMtovec,XMδtovec,vectoXM,vectoXMδ,XMδLtovec,vectoXMδL, # transfer Xp,dXdt,M,δ to the state vector
@@ -11,12 +6,7 @@ XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors
 ifamongone,ifamong,constructXarrays,
 duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
 Hfilm,getδarea,getδFromδarea,getMvapor,getMfilm,getMliquid,
-getMperlength,getMshortenedfilm,getMshortenedvapor,
 getCa,filmδcorr,getAdeposit
-
-# using ..Systems
-# using LinearAlgebra
-# using XLSX
 
 """
     This function is a sub-function of getheight. This function is to get the actural physical height for one interface
@@ -627,7 +617,10 @@ function getMvapor(sys)
 
     ρᵥ = PtoD.(sys.vapor.P)
     Ac = sys.tube.Ac
-    δ = sys.vapor.δ
+    δstart = sys.vapor.δstart
+    δend = sys.vapor.δend
+    Lfilm_start = sys.vapor.Lfilm_start
+    Lfilm_end = sys.vapor.Lfilm_end
 
     Xp = sys.liquid.Xp
     L = sys.tube.L
@@ -635,136 +628,76 @@ function getMvapor(sys)
     closedornot = sys.tube.closedornot
 
     Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
-    δarea = getδarea(Ac,d,δ)
+    Astart = getδarea(Ac,d,δstart)
+    Aend = getδarea(Ac,d,δend)
+    
 
-    Mvapor = ρᵥ .* (Ac .- δarea) .* Lvaporplug
+    Mvapor = ρᵥ .* ((Ac .- Astart) .* Lfilm_start + (Ac .- Aend) .* Lfilm_end + Ac .* (Lvaporplug - Lfilm_start - Lfilm_end))
 
     Mvapor
 end
 
-function getMfilm(sys)
+function getVolumevapor(Ac,Astart,Aend,Lvaporplug,Lfilm_start,Lfilm_end)
+    Volumevapor = Ac .* Lvaporplug - Astart .* Lfilm_start - Aend .* Lfilm_end
 
-    ρᵥ = PtoD.(sys.vapor.P)
+    Volumevapor
+end
+
+function getVolumevapor(sys)
+
     Ac = sys.tube.Ac
-    δ = sys.vapor.δ
+    δstart = sys.vapor.δstart
+    δend = sys.vapor.δend
+    Lfilm_start = sys.vapor.Lfilm_start
+    Lfilm_end = sys.vapor.Lfilm_end
 
-    ρₗ = sys.liquid.ρ
     Xp = sys.liquid.Xp
     L = sys.tube.L
     d = sys.tube.d
     closedornot = sys.tube.closedornot
 
     Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
-    δarea = getδarea(Ac,d,δ)
+    Astart = getδarea(Ac,d,δstart)
+    Aend = getδarea(Ac,d,δend)
+    
 
-    Mfilm =δarea .* Lvaporplug .* ρₗ
+    Volumevapor = Ac .* Lvaporplug - Astart .* Lfilm_start - Aend .* Lfilm_end
 
-    Mfilm
+    Volumevapor
+end
+
+function getMfilm(sys)
+
+    Ac = sys.tube.Ac
+    δstart = sys.vapor.δstart
+    δend = sys.vapor.δend
+    Lfilm_start = sys.vapor.Lfilm_start
+    Lfilm_end = sys.vapor.Lfilm_end
+
+
+    ρₗ = sys.liquid.ρ
+    d = sys.tube.d
+
+    Astart = getδarea(Ac,d,δstart)
+    Aend = getδarea(Ac,d,δend)
+
+    Mfilm_start = Astart .* Lfilm_start .* ρₗ
+    Mfilm_end = Aend .* Lfilm_end .* ρₗ
+
+    return Mfilm_start, Mfilm_end
 end
 
 function getMliquid(sys)
 
-    ρᵥ = PtoD.(sys.vapor.P)
     Ac = sys.tube.Ac
-    δ = sys.vapor.δ
-
     ρₗ = sys.liquid.ρ
     Xp = sys.liquid.Xp
     L = sys.tube.L
-    d = sys.tube.d
-    closedornot = sys.tube.closedornot
 
     Lliquidslug = XptoLliquidslug(Xp,L)
-#     δarea = getδarea(Ac,d,δ)
-
     Mliquid = ρₗ .* Ac .* Lliquidslug
 
     Mliquid
-end
-
-function getMperlength(sys,i)
-
-#    for vapor and its film
-
-    Xp = sys.liquid.Xp
-    L = sys.tube.L
-
-    closedornot = sys.tube.closedornot
-
-
-    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
-    Mfilm = getMfilm(sys)
-    Mvapor = getMvapor(sys)
-
-    M_per_length = (Mfilm+Mvapor) ./ Lvaporplug
-
-    M_per_length[i]
-end
-
-function getMshortenedfilm(sys,i)
-
-#     ρᵥ = PtoD.(sys.vapor.P)
-#     Ac = sys.tube.Ac
-#     δ = sys.vapor.δ
-
-#     ρₗ = sys.liquid.ρ
-    Xp = sys.liquid.Xp
-    L = sys.tube.L
-#     d = sys.tube.d
-    closedornot = sys.tube.closedornot
-
-#     Lliquidslug = XptoLliquidslug(Xp,L)
-# #     δarea = getδarea(Ac,d,δ)
-
-    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
-    Mfilm = getMfilm(sys)
-    Mvapor = getMvapor(sys)
-
-    M_per_length = (Mfilm) ./ Lvaporplug
-
-#     println(Mfilm)
-#     println(Mvapor)
-#     println(M_per_length)
-#     println(Lvaporplug)
-
-
-    left_index = i > 1 ? i-1 : length(Mfilm)
-    right_index = i < length(Mfilm) ? i+1 : 1
-
-    Mshortenedfilm = M_per_length[left_index] * (Lvaporplug[i]/2) + M_per_length[right_index] * (Lvaporplug[i]/2)
-end
-
-function getMshortenedvapor(sys,i)
-
-#     ρᵥ = PtoD.(sys.vapor.P)
-#     Ac = sys.tube.Ac
-#     δ = sys.vapor.δ
-
-#     ρₗ = sys.liquid.ρ
-    Xp = sys.liquid.Xp
-    L = sys.tube.L
-#     d = sys.tube.d
-    closedornot = sys.tube.closedornot
-
-#     Lliquidslug = XptoLliquidslug(Xp,L)
-# #     δarea = getδarea(Ac,d,δ)
-
-    Lvaporplug = XptoLvaporplug(Xp,L,closedornot)
-    Mfilm = getMfilm(sys)
-    Mvapor = getMvapor(sys)
-
-    M_per_length = (Mvapor) ./ Lvaporplug
-
-#     println(Mfilm)
-#     println(Mvapor)
-#     println(M_per_length)
-#     println(Lvaporplug)
-
-
-    left_index = i > 1 ? i-1 : length(Mfilm)
-    right_index = i < length(Mfilm) ? i+1 : 1
-
-    Mshortenedvapor = M_per_length[left_index] * (Lvaporplug[i]/2) + M_per_length[right_index] * (Lvaporplug[i]/2)
 end
 
 function getCa(μ,σ,velocity)
