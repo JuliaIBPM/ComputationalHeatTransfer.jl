@@ -11,7 +11,7 @@ function getcurrentsys(u,sys0)
         indexes = Int64[]
         θliquidrec = Array[]
 
-        for i = 1:length(u)
+        for i in eachindex(u)
             if abs(u[i]+1e10) <= 10^(-1)
                 push!(indexes,i)
             end
@@ -47,7 +47,8 @@ function getcurrentsys(u,sys0)
 
     volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
     ρ = M ./ volume_vapor
-    # println(M)
+    # println(δarea_end[4:6])
+    # println(findmax(ρ))
     P = DtoP.(ρ)
   
     sysnew.vapor.P = P

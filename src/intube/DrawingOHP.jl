@@ -1,6 +1,23 @@
 using LinearAlgebra
 
-export construct_oneloop_curve
+export construct_oneloop_curve,construct_ohp_curve
+
+function construct_ohp_curve(OHPtype::String,Δx::Real)
+
+    if OHPtype == "ASETS"
+    ds = 1.5Δx
+    nturn = 16
+    width_ohp = 46.25*1e-3
+    length_ohp = 133.83*1e-3
+    gap = 1e-3
+    pitch = width_ohp/(2*nturn+1)
+    x0, y0 = length_ohp/2 * 1.02, width_ohp/2
+
+    return x, y, xf, yf = ComputationalHeatTransfer.construct_ohp_curve(nturn,pitch,length_ohp,gap,ds,x0,y0,false,false,3pi/2)
+    end
+
+    return "Type wrong"
+end
 
 function construct_oneloop_curve(x0,y0,ds,length,gap,angle)
     x, y = Float64[], Float64[]

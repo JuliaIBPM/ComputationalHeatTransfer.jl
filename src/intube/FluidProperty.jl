@@ -1,8 +1,8 @@
-export Property,get_saturation_property
+export SaturationFluidProperty
 
 using CoolProp
 
-struct Property
+struct SaturationFluidProperty
     Cpₗ::Float64
     ρₗ::Float64
     μₗ::Float64
@@ -29,7 +29,7 @@ struct Property
     hₗᵥ::Float64
 end
 
-function Property(Cpₗ,ρₗ,μₗ,hₗ,kₗ,Prₗ,Cpᵥ,ρᵥ,μᵥ,hᵥ,kᵥ,Prᵥ,σ,P,R,M)
+function SaturationFluidProperty(Cpₗ,ρₗ,μₗ,hₗ,kₗ,Prₗ,Cpᵥ,ρᵥ,μᵥ,hᵥ,kᵥ,Prᵥ,σ,P,R,M)
 
     Rkg = R/M
     αₗ = kₗ/ρₗ/Cpₗ
@@ -37,10 +37,10 @@ function Property(Cpₗ,ρₗ,μₗ,hₗ,kₗ,Prₗ,Cpᵥ,ρᵥ,μᵥ,hᵥ,kᵥ,
     νᵥ = μᵥ/ρᵥ;
     hₗᵥ = hᵥ-hₗ;
 
-    Property(Cpₗ,ρₗ,μₗ,hₗ,kₗ,Prₗ,Cpᵥ,ρᵥ,μᵥ,hᵥ,kᵥ,Prᵥ,σ,P,R,M,Rkg,αₗ,νₗ,νᵥ,hₗᵥ)
+    SaturationFluidProperty(Cpₗ,ρₗ,μₗ,hₗ,kₗ,Prₗ,Cpᵥ,ρᵥ,μᵥ,hᵥ,kᵥ,Prᵥ,σ,P,R,M,Rkg,αₗ,νₗ,νᵥ,hₗᵥ)
 end
 
-function get_saturation_property(fluid_type,Tᵥ)
+function SaturationFluidProperty(fluid_type::String,Tᵥ)
     Cpₗ = CoolProp.PropsSI("CPMASS","T",Tᵥ,"Q",0.0,fluid_type)
     ρₗ  = CoolProp.PropsSI("D","T",Tᵥ,"Q",0.0,fluid_type)
     μₗ  = CoolProp.PropsSI("V","T",Tᵥ,"Q",0.0,fluid_type)
@@ -59,12 +59,6 @@ function get_saturation_property(fluid_type,Tᵥ)
     P = CoolProp.PropsSI("P","T",Tᵥ,"Q",0.0,fluid_type)
     R = CoolProp.PropsSI("GAS_CONSTANT","T",Tᵥ,"Q",1.0,fluid_type)
     M = CoolProp.PropsSI("M","T",Tᵥ,"Q",1.0,fluid_type)
-    Rkg = R/M
 
-    αₗ = kₗ/ρₗ/Cpₗ
-    νₗ = μₗ/ρₗ
-    νᵥ = μᵥ/ρᵥ;
-    hₗᵥ = hᵥ-hₗ;
-
-    Property(Cpₗ,ρₗ,μₗ,hₗ,kₗ,Prₗ,Cpᵥ,ρᵥ,μᵥ,hᵥ,kᵥ,Prᵥ,σ,P,R,M)
+    SaturationFluidProperty(Cpₗ,ρₗ,μₗ,hₗ,kₗ,Prₗ,Cpᵥ,ρᵥ,μᵥ,hᵥ,kᵥ,Prᵥ,σ,P,R,M)
 end

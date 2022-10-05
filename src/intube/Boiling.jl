@@ -118,20 +118,25 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     Lliquid_adjust = 0
     Xpnew = getnewXp(Xp,index,Xvapornew,Lliquid_adjust,L,closedornot)
 
-    Lvaporplug_new = XptoLvaporplug(Xpnew,sys.tube.L,sys.tube.closedornot)
-    Astart_new = getδarea(Ac,d,δstart_new)
-    Aend_new = getδarea(Ac,d,δend_new)
-    Volumevapor_new = getVolumevapor(Ac,Astart_new,Aend_new,Lvaporplug_new,Lfilm_start_new,Lfilm_end_new)
 
-    Pnew_left = DtoP(Mvapor[index]/Volumevapor_new[index])
-    Pnew_right = DtoP(Mvapor[loop_plus_index[index]]/Volumevapor_new[loop_plus_index_new[index]])
+    # const P in adjacent vapors
+    Pnew = insert!(P,index+1,Pinsert)
 
-    # println(P[index-2:index+5])
+    # const M in adjacent vapors
+    # Lvaporplug_new = XptoLvaporplug(Xpnew,sys.tube.L,sys.tube.closedornot)
+    # Astart_new = getδarea(Ac,d,δstart_new)
+    # Aend_new = getδarea(Ac,d,δend_new)
+    # Volumevapor_new = getVolumevapor(Ac,Astart_new,Aend_new,Lvaporplug_new,Lfilm_start_new,Lfilm_end_new)
+    # Pnew_left = DtoP(Mvapor[index]/Volumevapor_new[index])
+    # Pnew_right = DtoP(Mvapor[loop_plus_index[index]]/Volumevapor_new[loop_plus_index_new[index]])
 
-    # avoid collapse right after boiling
-    Pnew = insert!(P,index+1,maximum([Pinsert,Pnew_left,Pnew_right]))
-    splice!(Pnew,index,Pnew_left)
-    splice!(Pnew,loop_plus_index_new[index],Pnew_right)
+    # # println(P[index-2:index+5])
+
+    # # avoid collapse right after boiling
+    # Pnew = insert!(P,index+1,maximum([Pinsert,Pnew_left,Pnew_right]))
+    # splice!(Pnew,index,Pnew_left)
+    # splice!(Pnew,loop_plus_index_new[index],Pnew_right)
+
 
     Xarraysnew = getnewXarrays(index,Xp,Xpnew,Xarrays,L,closedornot)
     θarraysnew = getnewθarrays(index,Xp,Xpnew,Xarrays,θarrays,L,closedornot)

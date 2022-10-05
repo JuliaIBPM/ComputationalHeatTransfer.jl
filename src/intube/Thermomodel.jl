@@ -115,6 +115,11 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             dMdt_latent_start,dMdt_sensible,dMdt_latent_end = dMdtdynamicsmodel(Xpvapor,sys)
             dMdt_latent_start_positive,dMdt_sensible_positive,dMdt_latent_end_positive = dMdtdynamicsmodel_positive(Xpvapor,sys)
 
+            # println(dMdt_latent_start[4:6])
+            # println(dMdt_sensible[4:6])
+            # println(dMdt_latent_end[1:10])
+            # println(dMdt_latent_start_positive[4:6])
+            # println(dMdt_latent_end_positive[4:6])
 
             F_start = ρₗ .* Ac .* 4 .* δstart .* (d .- δstart) ./ (d^2)
             C_start = ρₗ .* Ac .* 4 .* (d .- 2δstart) ./ (d^2)
@@ -172,6 +177,14 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                     dLdt_end[i] = dLdt_end_normal[i]
                 end
             end
+
+            # println(he_end_short[5])
+            # println(he_end_positive[5])
+            # println(he_meet[5])
+            # println(Lfilm_end[4:6])
+            # println(dLdt_end[4:6])
+            # println(dLdt_end_normal[4:6])
+            # println(δend[4:6])
 
             # dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start) 
             # dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end)
@@ -240,7 +253,6 @@ function dMdtdynamicsmodel(Xpvapor::Array{Tuple{Float64,Float64},1},sys::PHPSyst
 
         Nvapor_pure = Int64(max(2 , div(Lvapor_pure[i],dx_wall)))
         heatflux_pure_vapor = quad_trap(H_interp,θ_wall_interp,θ[i],mod(Xpvapor[i][1]+Lfilm_start[i],L),mod(Xpvapor[i][2]-Lfilm_end[i],L),L,Nvapor_pure)
-
         Nend = Int64(max(2 , div(Lfilm_end[i],dx_wall)))
         heatflux_end = quad_trap(H_interp,θ_wall_interp,θ[i],mod(Xpvapor[i][2]-Lfilm_end[i],L),Xpvapor[i][2],L,Nend)
 
@@ -457,7 +469,6 @@ function sys_to_Harray(p::PHPSystem)
     Harray
 end
 
-
 function quad_trap(H_interp,θ_interp,θvapor_one, a,b,L,N) 
     h = mod((b-a),L)/N
     
@@ -471,7 +482,7 @@ function quad_trap(H_interp,θ_interp,θvapor_one, a,b,L,N)
         xk = mod((b-a),L) * k/N + a
         int = int + h*H_interp(mod(xk,L))*(θ_interp(mod(xk,L))-θvapor_one)
     end
-    return int
+    return (b>a) ? int : 0
 end
 
 function quad_trap_positive(H_interp,θ_interp,θvapor_one, a,b,L,N) 
@@ -487,7 +498,7 @@ function quad_trap_positive(H_interp,θ_interp,θvapor_one, a,b,L,N)
         xk = mod((b-a),L) * k/N + a
         int = int + maximum([h*H_interp(mod(xk,L))*(θ_interp(mod(xk,L))-θvapor_one),0.0])
     end
-    return int
+    return (b>a) ? int : 0
 end
 
 function integrator_to_Harray(inte)
