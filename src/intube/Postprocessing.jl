@@ -140,17 +140,27 @@ function getthist(tube_hist)
     thist
 end
 
-function getgt(g,H,plate_T_hist,tube_hist)
-    ghist = getghist(g,H,plate_T_hist)
-    thist = getthist(tube_hist)
+# function getgt(g,H,plate_T_hist,tube_hist)
+#     ghist = getghist(g,H,plate_T_hist)
+#     thist = getthist(tube_hist)
 
-    ghist,thist
-end
+#     ghist,thist
+# end
 
 function getsysfinal(tube_hist)
     sysfinal = []
     for tube_i in tube_hist
         push!(sysfinal, deepcopy(getcurrentsys(tube_i.u,tube_i.p)))
+    end
+    
+    sysfinal
+end
+
+function getsysfinal(tube_hist_u,tube_hist_θwall,integrator_tube)
+    sysfinal = []
+    for i in eachindex(tube_hist_u)
+        push!(sysfinal, deepcopy(getcurrentsys(tube_hist_u[i],integrator_tube.p)))
+        sysfinal[i].wall.θarray = tube_hist_θwall[i]
     end
     
     sysfinal
