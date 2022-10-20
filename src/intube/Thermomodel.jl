@@ -1,6 +1,6 @@
 # module Thermomodel
 
-export dMdtdynamicsmodel,wallmodel,liquidmodel,dynamicsmodel,sys_to_heatflux,sys_to_Harray,integrator_to_heatflux,integrator_to_Harray
+export dMdtdynamicsmodel,dynamicsmodel_steadyfilm,wallmodel,liquidmodel,dynamicsmodel,sys_to_heatflux,sys_to_Harray,integrator_to_heatflux,integrator_to_Harray
 
 
 function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
@@ -11,6 +11,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     sys = deepcopy(p)
 
     Xp = sys.liquid.Xp
+    V = [elem[2] for elem in sys.liquid.dXdt]
     numofliquidslug = length(Xp)
 
     d = sys.tube.d
@@ -51,9 +52,16 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
     rhs_press = Ac ./ lhs
 
-  dXdt_to_stress = -8*μₗ/d
+    Re_list = ρₗ .* abs.(V) .* d ./ μₗ
+    # println(V)
+    f_coefficient = f_churchill.(Re_list .+ 1e-4)
+    dXdt_to_stress = -0.125 .* f_coefficient .* ρₗ .* V .* abs.(V)
+    # dXdt_to_stress = -8*μₗ/d
+
     rhs_dXdt = peri .* Lliquidslug .* dXdt_to_stress ./ lhs
 
+    # println(dXdt_to_stress)
+    # println(-8*μₗ/d .* V)
 
     rhs_g = Ac*ρₗ*g*cos(angle) ./ lhs
 
@@ -90,11 +98,17 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
                 # println(i,",",numofliquidslug)
 
+                # if i != numofliquidslug
+                #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt
+                # else
+                #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt
+                # end
+
                 if i != numofliquidslug
-                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt
                 else
-                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt
-                end
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt
+                end                
 
                 du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
 
@@ -133,6 +147,11 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             dLdt_start_normal = (-dMdt_latent_start_positive .* Eratio) ./ F_start - v_vapor_left
             dLdt_end_normal = (-dMdt_latent_end_positive .* Eratio) ./ F_end + v_vapor_right
 
+            # println(maximum(abs.(dLdt_start_normal + v_vapor_left)))
+            # println(maximum(abs.(dLdt_end_normal - v_vapor_right)))
+            # println(v_vapor_left)
+
+
             he_start_short = Bool.(heaviside.(-Lfilm_start .+ L0threshold_film))
             he_end_short = Bool.(heaviside.(-Lfilm_end .+ L0threshold_film))
             he_start_positive = Bool.(heaviside.(dLdt_start_normal))
@@ -148,9 +167,6 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                         dLdt_start[i] = 0
                     elseif he_start_positive[i]
                         dLdt_start[i] = he_end_short[i] ? v_vapor_right[i] .- v_vapor_left[i] : -v_vapor_left[i]
-                        if i == 1 
-     
-                        end
                     else
                         dLdt_start[i] = minimum([dLdt_start_normal[i],v_vapor_right[i] .- v_vapor_left[i], -v_vapor_left[i]])
                     end
@@ -161,6 +177,10 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                 end
             end
 
+            # aa = maximum(abs.((dLdt_start + v_vapor_left) .* (1 .- he_meet) .* (1 .- he_start_short)))
+            # if aa > 1e-8 
+            #     println(aa)
+            # end
      
             for i = 1:numofvaporbubble
                 if he_meet[i]
@@ -366,6 +386,7 @@ function liquidmodel(p::PHPSystem)
 
         fx = map(θ_wall_inter, xs) - θarrays[i]
         du[i] = α .* laplacian(θarrays[i]) ./ dx ./ dx + Hₗ .* fx .* H_rhs
+        # du[i] = Hₗ .* fx .* H_rhs
 
         # same temperature B.C.
         du[i][1] = (Ttuple[1]-θarrays[i][1])/tstep
@@ -508,3 +529,223 @@ end
 getslope(y2,y1,x2,x1) = (y2-y1)/(x2-x1)
 
 heaviside(x::AbstractFloat) = ifelse(x < 0, zero(x), ifelse(x > 0, one(x), oftype(x,0.0)))
+
+function dynamicsmodel_steadyfilm(u::Array{Float64,1},p::PHPSystem)
+
+
+    du = zero(deepcopy(u))
+
+    sys = deepcopy(p)
+
+    Xp = sys.liquid.Xp
+    numofliquidslug = length(Xp)
+
+    d = sys.tube.d
+    peri = sys.tube.peri
+    Ac = sys.tube.Ac
+    angle = sys.tube.angle
+    g = sys.tube.g
+
+
+    P = sys.vapor.P
+    Eratio = sys.vapor.Eratio
+    δstart = sys.vapor.δstart
+    δend = sys.vapor.δend
+    Lfilm_start = sys.vapor.Lfilm_start
+    Lfilm_end = sys.vapor.Lfilm_end
+
+    δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
+    δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
+
+    # temporary!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    δfilm = Main.δfilm
+
+    δdeposit = δfilm
+    Adeposit = getAdeposit(sys,δdeposit)
+
+
+    μₗ = sys.liquid.μₗ
+
+    Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
+    Lliquidslug = XptoLliquidslug(Xp,sys.tube.L)
+    height = getheight(Xp,sys.tube.L2D,sys.tube.angle)
+    Xpvapor = getXpvapor(Xp,sys.tube.L,sys.tube.closedornot)
+
+
+    ρₗ = p.liquid.ρ
+# get differential equation factors
+    lhs = ρₗ*Ac .* Lliquidslug
+
+    rhs_press = Ac ./ lhs
+
+  dXdt_to_stress = -8*μₗ/d
+    rhs_dXdt = peri .* Lliquidslug .* dXdt_to_stress ./ lhs
+
+
+    rhs_g = Ac*ρₗ*g*cos(angle) ./ lhs
+
+    if p.tube.closedornot == false
+        println("open loop not supported!")
+         return "open loop not supported!"
+        end
+
+    if p.tube.closedornot == true
+
+        numofvaporbubble = numofliquidslug
+
+        v_liquid_left=zeros(numofliquidslug)
+        v_liquid_right=zeros(numofliquidslug)
+        v_vapor_left=zeros(numofvaporbubble)
+        v_vapor_right=zeros(numofvaporbubble)
+
+            for i = 1:numofliquidslug
+
+    # temperary v, need a new momentum equation to solve for it, but now I have to let it be, for liquid mass conservation
+    #  momentum for liquid
+                v_momentum = u[2*numofliquidslug+2*i-1]
+
+                # v_liquid_left[i] = v_momentum + v_momentum*Adeposit[i][1]/(Ac-Adeposit[i][1])
+                # v_liquid_right[i] = v_momentum + v_momentum*Adeposit[i][end]/(Ac-Adeposit[i][end])
+
+                v_liquid_left[i] = v_momentum
+                v_liquid_right[i] = v_momentum
+
+                rhs_dLdt = -v_momentum*(v_liquid_right[i]-v_liquid_left[i])/Lliquidslug[i]
+
+                du[2*i-1] = v_liquid_left[i]
+                du[2*i] = v_liquid_right[i]
+
+                # println(i,",",numofliquidslug)
+
+                if i != numofliquidslug
+                    du[2*numofliquidslug + 2*i-1] = (rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt) .* 0.0
+                else
+                    du[2*numofliquidslug + 2*i-1] = (rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt) .* 0.0
+                end
+
+                du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
+
+            end
+
+            # vapor δ
+            v_vapor_left[2:end] = v_liquid_right[1:end-1]
+            v_vapor_left[1] = v_liquid_right[end]
+            v_vapor_right = v_liquid_left
+
+            A_dδdt_right_vapor = [elem[1] for elem in Adeposit]
+
+            A_dδdt_right_liquid = [elem[2] for elem in Adeposit]
+            A_dδdt_left_vapor = zeros(size(A_dδdt_right_vapor))
+            A_dδdt_left_vapor[2:end] = A_dδdt_right_liquid[1:end-1]
+            A_dδdt_left_vapor[1] = A_dδdt_right_liquid[end]
+
+            dMdt_latent_start,dMdt_sensible,dMdt_latent_end = dMdtdynamicsmodel(Xpvapor,sys)
+            dMdt_latent_start_positive,dMdt_sensible_positive,dMdt_latent_end_positive = dMdtdynamicsmodel_positive(Xpvapor,sys)
+
+            # println(dMdt_latent_start[4:6])
+            # println(dMdt_sensible[4:6])
+            # println(dMdt_latent_end[1:10])
+            # println(dMdt_latent_start_positive[4:6])
+            # println(dMdt_latent_end_positive[4:6])
+
+            F_start = ρₗ .* Ac .* 4 .* δstart .* (d .- δstart) ./ (d^2)
+            C_start = ρₗ .* Ac .* 4 .* (d .- 2δstart) ./ (d^2)
+
+            F_end = ρₗ .* Ac .* 4 .* δend .* (d .- δend) ./ (d^2)
+            C_end = ρₗ .* Ac .* 4 .* (d .- 2δend) ./ (d^2)
+
+            L0threshold_film = 4e-4
+            L0threshold_pure_vapor = 1e-3
+
+            dLdt_start_normal = (-dMdt_latent_start_positive .* Eratio) ./ F_start - v_vapor_left
+            dLdt_end_normal = (-dMdt_latent_end_positive .* Eratio) ./ F_end + v_vapor_right
+
+            # println(maximum(abs.(dLdt_start_normal + v_vapor_left)))
+            # println(maximum(abs.(dLdt_end_normal - v_vapor_right)))
+            # println(v_vapor_left)
+
+
+            he_start_short = Bool.(heaviside.(-Lfilm_start .+ L0threshold_film))
+            he_end_short = Bool.(heaviside.(-Lfilm_end .+ L0threshold_film))
+            he_start_positive = Bool.(heaviside.(dLdt_start_normal))
+            he_end_positive = Bool.(heaviside.(dLdt_end_normal))
+            he_meet= Bool.(heaviside.(-Lvaporplug .+ Lfilm_start .+ Lfilm_end .+ L0threshold_pure_vapor))
+
+            dLdt_start = zeros(numofvaporbubble)
+            dLdt_end = zeros(numofvaporbubble)
+        
+            for i = 1:numofvaporbubble
+                if he_meet[i]
+                    if he_start_short[i]
+                        dLdt_start[i] = 0
+                    elseif he_start_positive[i]
+                        dLdt_start[i] = he_end_short[i] ? v_vapor_right[i] .- v_vapor_left[i] : -v_vapor_left[i]
+                    else
+                        dLdt_start[i] = minimum([dLdt_start_normal[i],v_vapor_right[i] .- v_vapor_left[i], -v_vapor_left[i]])
+                    end
+                elseif he_start_short[i]
+                    dLdt_start[i] = he_start_positive[i] ? dLdt_start_normal[i] : 0
+                else
+                    dLdt_start[i] = dLdt_start_normal[i]
+                end
+            end
+
+            # aa = maximum(abs.((dLdt_start + v_vapor_left) .* (1 .- he_meet) .* (1 .- he_start_short)))
+            # if aa > 1e-8 
+            #     println(aa)
+            # end
+     
+            for i = 1:numofvaporbubble
+                if he_meet[i]
+                    if he_end_short[i]
+                        dLdt_end[i] = 0
+                    elseif he_end_positive[i]
+                        dLdt_end[i] = he_start_short[i] ? v_vapor_right[i] .- v_vapor_left[i] : v_vapor_right[i]
+                    else
+                        dLdt_end[i] = minimum([dLdt_end_normal[i],v_vapor_right[i] .- v_vapor_left[i],v_vapor_right[i]])
+                    end
+                elseif he_end_short[i]
+                    dLdt_end[i] = he_end_positive[i] ? dLdt_end_normal[i] : 0
+                else
+                    dLdt_end[i] = dLdt_end_normal[i]
+                end
+            end
+
+            # println(he_end_short[5])
+            # println(he_end_positive[5])
+            # println(he_meet[5])
+            # println(Lfilm_end[4:6])
+            # println(dLdt_end[4:6])
+            # println(dLdt_end_normal[4:6])
+            # println(δend[4:6])
+
+            # dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start) 
+            # dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end)
+
+            dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start)  + (- ρₗ .* A_dδdt_left_vapor .* v_vapor_left + F_start .* v_vapor_left) ./ (C_start .* Lfilm_start) 
+            dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end) - (- ρₗ .* A_dδdt_right_vapor .* v_vapor_right + F_end .* v_vapor_right) ./ (C_end .* Lfilm_end)
+
+            he_dδdt_start_positive = dδdt_start_normal .> 0
+            he_dδdt_end_positive = dδdt_end_normal .> 0
+            he_dδdt_start_toobig = δstart .> 1e-4
+            he_dδdt_start_toosmall = δstart .< 5e-6
+            he_dδdt_end_toobig = δend .> 1e-4
+            he_dδdt_end_toosmall = δend .< 5e-6
+
+            dδdt_start = (1 .- (he_dδdt_start_toosmall .* (1 .- he_dδdt_start_positive) .+ he_dδdt_start_toobig .* he_dδdt_start_positive)) .* dδdt_start_normal
+            # println((1 .- div.((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive),2)))
+            dδdt_end = (1 .- ((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive))) .* dδdt_end_normal
+
+            volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end;
+
+            du[4*numofliquidslug+1:5*numofliquidslug] .= (dMdt_latent_start+dMdt_sensible+dMdt_latent_end).*0.0
+            du[5*numofliquidslug+1:6*numofliquidslug] .= dδdt_start # equals to 0 for now
+            du[6*numofliquidslug+1:7*numofliquidslug] .= dδdt_end # equals to 0 for now
+            du[7*numofliquidslug+1:8*numofliquidslug] .= dLdt_start # equals to 0 for now
+            du[8*numofliquidslug+1:9*numofliquidslug] .= dLdt_end # equals to 0 for now
+
+            return du
+    end
+
+
+end
