@@ -1,14 +1,21 @@
 export boiling_affect!,nucleateboiling,boiling_condition
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_interval = 0.1
+    t_interval = 0.01
+
+    # println("boiling_condition")
 
     ϵ = 1e-5
+
+    # println(t)
+    # println((abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ)
 
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
 end
 
 function boiling_affect!(integrator)
+
+    # println("boiling_affect!")
 
     Δθthreshold = integrator.p.wall.ΔTthres
 
@@ -27,7 +34,8 @@ function boiling_affect!(integrator)
                 push!(Main.boil_hist,[i,integrator.t]);
                 b_count += 1;
 
-                Pinsert = p.mapping.P_interp_liquidtowall(p.wall.Xstations[i])
+                # Pinsert = p.mapping.P_interp_liquidtowall(p.wall.Xstations[i])
+                Pinsert = TtoP(p.mapping.θ_interp_walltoliquid(p.wall.Xstations[i]))
 
                 p = nucleateboiling(p,(p.wall.Xstations[i]-2p.tube.d,p.wall.Xstations[i]+2p.tube.d),Pinsert) # P need to be given from energy equation
         end
@@ -94,8 +102,8 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     loop_plus_index = [2:Nvapor;1]
     loop_plus_index_new = [3:Nvapor+1;1:2]
 
-    Lfilm_start_new = insert!(Lfilm_start,index+1,Linsert/4)
-    Lfilm_end_new = insert!(Lfilm_end,index+1,Linsert/4)
+    Lfilm_start_new = insert!(Lfilm_start,index+1,Linsert/2-1e-4)
+    Lfilm_end_new = insert!(Lfilm_end,index+1,Linsert/2 -1e-4)
 
     max_index = findmax([Lfilm_start_new[index],Lvaporplug[index] - Lfilm_end_new[index] - Lfilm_start_new[index], Lfilm_end_new[index]])[2]
     if max_index == 1 && Lfilm_start_new[index] > Linsert/2
