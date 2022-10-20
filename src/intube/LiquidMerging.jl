@@ -60,10 +60,9 @@ function merging(p,i)
     left_index = i > 1 ? i-1 : length(Lvaporplug)
   
     L = p.tube.L
-    δv = 2p.tube.d
-    L_diff = δv
     
-    Xpnewone = mod(p.liquid.Xp[left_index][1]+L_diff/2,L), mod(p.liquid.Xp[i][end] - L_diff/2,L)
+    Xpnewone = mod(p.liquid.Xp[left_index][1]+Lvaporplug[i]/2,L), mod(p.liquid.Xp[i][end] - Lvaporplug[i]/2,L)
+
     dXdtnewonevalue = (i != 1) ? (p.liquid.dXdt[i-1][1]*Lliquidslug[i-1] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[i-1]+Lliquidslug[i]) : (p.liquid.dXdt[end][1]*Lliquidslug[end] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[end]+Lliquidslug[i])
         #    println("hahaha")
 
