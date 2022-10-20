@@ -19,7 +19,7 @@ function construct_ohp_curve(OHPtype::String,Δx::Real)
     return "Type wrong"
 end
 
-function construct_oneloop_curve(x0,y0,ds,length,gap,angle)
+function construct_oneloop_curve(x0,y0,ds,length,gap)
     x, y = Float64[], Float64[]
 
     xt1 = x0 + length/2
