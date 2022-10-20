@@ -6,7 +6,7 @@ XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors
 ifamongone,ifamong,constructXarrays,
 duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
 Hfilm,getδarea,getδFromδarea,getMvapor,getMfilm,getMliquid,
-getCa,filmδcorr,getAdeposit
+getCa,filmδcorr,getAdeposit,f_churchill
 
 """
     This function is a sub-function of getheight. This function is to get the actural physical height for one interface
@@ -800,4 +800,12 @@ function getAdeposit(sys,δdeposit)
     end
 
     Adeposit
+end
+
+function f_churchill(Re,ϵ=0.001)
+    Θ1 = (-2.457*log((7/Re)^(0.9)  +  0.27 * ϵ))^16
+    Θ2 = (37530/Re)^16
+    f=8*((8/Re)^12+(1/(Θ1+Θ2)^1.5))^(1/12)
+    
+    f
 end
