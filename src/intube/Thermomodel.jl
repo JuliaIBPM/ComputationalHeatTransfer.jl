@@ -1,4 +1,4 @@
-# module Thermomodel
+using Statistics
 
 export dMdtdynamicsmodel,dynamicsmodel_steadyfilm,wallmodel,liquidmodel,dynamicsmodel,sys_to_heatflux,sys_to_Harray,integrator_to_heatflux,integrator_to_Harray
 
@@ -10,8 +10,10 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
     sys = deepcopy(p)
 
+    σ = sys.liquid.σ
+    μₗ = sys.liquid.μₗ
     Xp = sys.liquid.Xp
-    V = [elem[2] for elem in sys.liquid.dXdt]
+   
     numofliquidslug = length(Xp)
 
     d = sys.tube.d
@@ -28,17 +30,21 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     Lfilm_start = sys.vapor.Lfilm_start
     Lfilm_end = sys.vapor.Lfilm_end
 
-    δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
-    δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
+    # δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
+    # δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
 
     # temporary!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    δfilm = Main.δfilm
+    # δfilm = Main.δfilm
 
-    δdeposit = δfilm
+    V = [elem[2] for elem in sys.liquid.dXdt]
+    Vavg = mean(abs.(V))
+    Ca = getCa.(μₗ,σ,Vavg)
+    
+    ad_fac = Main.ad_fac
+    δdeposit = Catoδ(d,Ca,adjust_factor=ad_fac)
+    # δdeposit = δfilm
     Adeposit = getAdeposit(sys,δdeposit)
 
-
-    μₗ = sys.liquid.μₗ
 
     Lvaporplug = XptoLvaporplug(Xp,sys.tube.L,sys.tube.closedornot)
     Lliquidslug = XptoLliquidslug(Xp,sys.tube.L)
@@ -215,9 +221,9 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             he_dδdt_start_positive = dδdt_start_normal .> 0
             he_dδdt_end_positive = dδdt_end_normal .> 0
             he_dδdt_start_toobig = δstart .> 1e-4
-            he_dδdt_start_toosmall = δstart .< 5e-6
+            he_dδdt_start_toosmall = δstart .< 3e-6
             he_dδdt_end_toobig = δend .> 1e-4
-            he_dδdt_end_toosmall = δend .< 5e-6
+            he_dδdt_end_toosmall = δend .< 3e-6
 
             dδdt_start = (1 .- (he_dδdt_start_toosmall .* (1 .- he_dδdt_start_positive) .+ he_dδdt_start_toobig .* he_dδdt_start_positive)) .* dδdt_start_normal
             # println((1 .- div.((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive),2)))
@@ -728,9 +734,9 @@ function dynamicsmodel_steadyfilm(u::Array{Float64,1},p::PHPSystem)
             he_dδdt_start_positive = dδdt_start_normal .> 0
             he_dδdt_end_positive = dδdt_end_normal .> 0
             he_dδdt_start_toobig = δstart .> 1e-4
-            he_dδdt_start_toosmall = δstart .< 5e-6
+            he_dδdt_start_toosmall = δstart .< 3e-6
             he_dδdt_end_toobig = δend .> 1e-4
-            he_dδdt_end_toosmall = δend .< 5e-6
+            he_dδdt_end_toosmall = δend .< 3e-6
 
             dδdt_start = (1 .- (he_dδdt_start_toosmall .* (1 .- he_dδdt_start_positive) .+ he_dδdt_start_toobig .* he_dδdt_start_positive)) .* dδdt_start_normal
             # println((1 .- div.((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive),2)))

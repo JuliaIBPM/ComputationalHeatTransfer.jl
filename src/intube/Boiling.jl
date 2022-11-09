@@ -70,11 +70,14 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     d = deepcopy(sys.tube.d)
     Xp = deepcopy(sys.liquid.Xp)
     dXdt = deepcopy(sys.liquid.dXdt)
+    σ = deepcopy(sys.liquid.σ)
+    μₗ = deepcopy(sys.liquid.μₗ)
     δstart = deepcopy(sys.vapor.δstart)
     δend = deepcopy(sys.vapor.δend)
     # Astart = getδarea(Ac,d,δstart)
     # Aend = getδarea(Ac,d,δend)
-    δfilm_deposit = deepcopy(sys.vapor.δfilm_deposit)
+    # δfilm_deposit = deepcopy(sys.vapor.δfilm_deposit)
+    
     P = deepcopy(sys.vapor.P)
     L = sys.tube.L
     
@@ -95,8 +98,14 @@ function nucleateboiling(sys,Xvapornew,Pinsert)
     Linsert = mod(Xvapornew[end] - Xvapornew[1],L)
 
     """let's do constant film thickness for now!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"""
-    δstart_new = insert!(δstart,index+1,δfilm_deposit)
-    δend_new = insert!(δend,index+1,δfilm_deposit)
+    V = [elem[2] for elem in sys.liquid.dXdt]
+    Vavg = mean(abs.(V))
+    Ca = getCa.(μₗ,σ,Vavg)
+        
+    ad_fac = Main.ad_fac
+    δdeposit = Catoδ(d,Ca,adjust_factor=ad_fac)
+    δstart_new = insert!(δstart,index+1,δdeposit)
+    δend_new = insert!(δend,index+1,δdeposit)
 
     Nvapor = length(P)
     loop_plus_index = [2:Nvapor;1]
