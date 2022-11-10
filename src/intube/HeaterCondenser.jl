@@ -1,6 +1,6 @@
 export OHPConfiguration
 
-function OHPConfiguration(configure_type::String,power::Real,Tc::Real,hc::Real,Î”x::Real;hc2ratio=1/10)
+function OHPConfiguration(configure_type::String,power::Real,Tc::Real,hc::Real,Î”x::Real;hc2ratio=1/20)
 
     if configure_type == "ASETS-II OHP 1 LARGE HEATER"
         total_heater_area = 2.0inch*2.0inch;
@@ -30,7 +30,7 @@ function OHPConfiguration(configure_type::String,power::Real,Tc::Real,hc::Real,Î
     return [eparams1,eparams2], [cparams1,cparams2]
     end
 
-    if configure_type == "ASETS-II OHP 2 LARGE HEATER"
+    if configure_type == "ASETS-II OHP 2 LARGE HEATER" || "ASETS-II OHP 3 LARGE HEATER"
         total_heater_area = 2.0inch*2.0inch;
         qe = power/total_heater_area;
 
@@ -81,7 +81,7 @@ function OHPConfiguration(configure_type::String,power::Real,Tc::Real,hc::Real,Î
     return [eparams1], [cparams1,cparams2]
     end
 
-    if configure_type == "ASETS-II OHP 2 SMALL HEATER"
+    if configure_type == "ASETS-II OHP 2 SMALL HEATER" || "ASETS-II OHP 3 SMALL HEATER"
         total_heater_area = 0.5inch*0.5inch;
         qe = power/total_heater_area;
 
