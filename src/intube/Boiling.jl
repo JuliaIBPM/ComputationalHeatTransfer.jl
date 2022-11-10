@@ -1,7 +1,7 @@
 export boiling_affect!,nucleateboiling,boiling_condition
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_interval = 0.1
+    t_interval = 0.01
 
     # println("boiling_condition")
 
