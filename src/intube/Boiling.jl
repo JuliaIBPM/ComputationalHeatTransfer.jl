@@ -1,7 +1,7 @@
 export boiling_affect!,nucleateboiling,boiling_condition
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_interval = 0.01
+    t_interval = 0.1
 
     # println("boiling_condition")
 
@@ -34,8 +34,8 @@ function boiling_affect!(integrator)
                 push!(Main.boil_hist,[i,integrator.t]);
                 b_count += 1;
 
-                # Pinsert = p.mapping.P_interp_liquidtowall(p.wall.Xstations[i])
-                Pinsert = TtoP(p.mapping.θ_interp_walltoliquid(p.wall.Xstations[i]))
+                Pinsert = p.mapping.P_interp_liquidtowall(p.wall.Xstations[i])
+                # Pinsert = TtoP(p.mapping.θ_interp_walltoliquid(p.wall.Xstations[i]))
 
                 p = nucleateboiling(p,(p.wall.Xstations[i]-2p.tube.d,p.wall.Xstations[i]+2p.tube.d),Pinsert) # P need to be given from energy equation
         end
