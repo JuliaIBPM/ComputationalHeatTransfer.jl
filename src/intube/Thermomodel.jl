@@ -30,6 +30,12 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     Lfilm_start = sys.vapor.Lfilm_start
     Lfilm_end = sys.vapor.Lfilm_end
 
+    # δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
+    # δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
+
+    # temporary!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # δfilm = Main.δfilm
+
     V = [elem[2] for elem in sys.liquid.dXdt]
     Vavg = mean(abs.(V))
     Ca = getCa.(μₗ,σ,Vavg)
@@ -79,12 +85,40 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
         v_vapor_left=zeros(numofvaporbubble)
         v_vapor_right=zeros(numofvaporbubble)
 
-        for i = 1:numofliquidslug
-            v_momentum = u[2*numofliquidslug+2*i-1]
+            for i = 1:numofliquidslug
 
-            v_liquid_left[i] = v_momentum #approximation
-            v_liquid_right[i] = v_momentum #approximation
-        end
+    # temperary v, need a new momentum equation to solve for it, but now I have to let it be, for liquid mass conservation
+    #  momentum for liquid
+                v_momentum = u[2*numofliquidslug+2*i-1]
+
+                # v_liquid_left[i] = v_momentum + v_momentum*Adeposit[i][1]/(Ac-Adeposit[i][1])
+                # v_liquid_right[i] = v_momentum + v_momentum*Adeposit[i][end]/(Ac-Adeposit[i][end])
+
+                v_liquid_left[i] = v_momentum
+                v_liquid_right[i] = v_momentum
+
+                rhs_dLdt = -v_momentum*(v_liquid_right[i]-v_liquid_left[i])/Lliquidslug[i]
+
+                du[2*i-1] = v_liquid_left[i]
+                du[2*i] = v_liquid_right[i]
+
+                # println(i,",",numofliquidslug)
+
+                # if i != numofliquidslug
+                #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt
+                # else
+                #     du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i]*u[2*numofliquidslug + 2*i-1] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt
+                # end
+
+                if i != numofliquidslug
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt
+                else
+                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt
+                end                
+
+                du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
+
+            end
 
             # vapor δ
             v_vapor_left[2:end] = v_liquid_right[1:end-1]
@@ -92,7 +126,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             v_vapor_right = v_liquid_left
 
             A_dδdt_right_vapor = [elem[1] for elem in Adeposit]
-            A_dδdt_left_liquid = A_dδdt_right_vapor
+
             A_dδdt_right_liquid = [elem[2] for elem in Adeposit]
             A_dδdt_left_vapor = zeros(size(A_dδdt_right_vapor))
             A_dδdt_left_vapor[2:end] = A_dδdt_right_liquid[1:end-1]
@@ -170,6 +204,17 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
                 end
             end
 
+            # println(he_end_short[5])
+            # println(he_end_positive[5])
+            # println(he_meet[5])
+            # println(Lfilm_end[4:6])
+            # println(dLdt_end[4:6])
+            # println(dLdt_end_normal[4:6])
+            # println(δend[4:6])
+
+            # dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start) 
+            # dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end)
+
             dδdt_start_normal = (-dMdt_latent_start .- (-dMdt_latent_start_positive .* Eratio)) ./ (C_start .* Lfilm_start)  + (- ρₗ .* A_dδdt_left_vapor .* v_vapor_left + F_start .* v_vapor_left) ./ (C_start .* Lfilm_start) 
             dδdt_end_normal = (-dMdt_latent_end .- (-dMdt_latent_end_positive .* Eratio)) ./ (C_end .* Lfilm_end) - (- ρₗ .* A_dδdt_right_vapor .* v_vapor_right + F_end .* v_vapor_right) ./ (C_end .* Lfilm_end)
 
@@ -184,33 +229,7 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             # println((1 .- div.((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive),2)))
             dδdt_end = (1 .- ((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive))) .* dδdt_end_normal
 
-            Astart = getδarea(Ac,d,δstart)
-            Aend = getδarea(Ac,d,δend)
-
-            dMdt_film_start = ρₗ .* Lfilm_start .* 4Ac ./ d .* (1 .- 2 .* δstart ./ d) .* dδdt_start .+ ρₗ .* Astart .* dLdt_start .- dMdt_latent_start
-            dMdt_film_end = ρₗ .* Lfilm_end .* 4Ac ./ d .* (1 .- 2 .* δend ./ d) .* dδdt_end .+ ρₗ .* Aend .* dLdt_end .- dMdt_latent_end
-
-            Nvapor = length(P)
-            loop_plus_index = [2:Nvapor;1]
-            for i = 1:numofliquidslug
-                du[2*i-1] = v_liquid_left[i] + dMdt_film_end[i] ./ ρₗ ./ (Ac .- 2Aend[i])
-                du[2*i] = v_liquid_right[i] + dMdt_film_start[loop_plus_index[i]] ./ ρₗ ./ (Ac .- 2Astart[loop_plus_index[i]])
-
-                v_momentum = v_liquid_right[i]
-                rhs_dLdt = -v_momentum*(du[2*i]-du[2*i-1])/Lliquidslug[i]
-            
-                if i != numofliquidslug
-                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[i+1]) + rhs_dLdt
-                else
-                    du[2*numofliquidslug + 2*i-1] = rhs_dXdt[i] + rhs_g[i]*(height[i][1]-height[i][end]) + rhs_press[i] * (P[i]-P[1]) + rhs_dLdt
-                end                
-            
-                du[2*numofliquidslug + 2*i] = du[2*numofliquidslug + 2*i-1]
-            end
-            
-
-            du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt_latent_start+dMdt_latent_end
-            # du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt_latent_start+dMdt_sensible+dMdt_latent_end
+            du[4*numofliquidslug+1:5*numofliquidslug] .= dMdt_latent_start+dMdt_sensible+dMdt_latent_end
             du[5*numofliquidslug+1:6*numofliquidslug] .= dδdt_start # equals to 0 for now
             du[6*numofliquidslug+1:7*numofliquidslug] .= dδdt_end # equals to 0 for now
             du[7*numofliquidslug+1:8*numofliquidslug] .= dLdt_start # equals to 0 for now
