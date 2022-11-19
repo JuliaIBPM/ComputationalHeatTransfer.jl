@@ -17,18 +17,18 @@ Hₗrange = CoolProp.PropsSI.("H","T",Trange,"Q",0.0,fluid_type);
 Hfgrange = Hᵥrange .- Hₗrange
 
 
-T0=295.0;
-D0=CoolProp.PropsSI("D","T",T0,"Q",1.0,fluid_type);
-P0=CoolProp.PropsSI("P","T",T0,"Q",1.0,fluid_type);
+# T0=295.0;
+# D0=CoolProp.PropsSI("D","T",T0,"Q",1.0,fluid_type);
+# P0=CoolProp.PropsSI("P","T",T0,"Q",1.0,fluid_type);
 
-nondi_Trange = Trange./T0
-nondi_Prange = Prange./P0
-nondi_Drange = Drange./D0;
+# nondi_Trange = Trange./T0
+# nondi_Prange = Prange./P0
+# nondi_Drange = Drange./D0;
 
-nondi_PtoT = LinearInterpolation(nondi_Prange, nondi_Trange);
-nondi_TtoP = LinearInterpolation(nondi_Trange, nondi_Prange);
-nondi_PtoD = LinearInterpolation(nondi_Prange, nondi_Drange);
-nondi_DtoP = LinearInterpolation(nondi_Drange, nondi_Prange);
+# nondi_PtoT = LinearInterpolation(nondi_Prange, nondi_Trange);
+# nondi_TtoP = LinearInterpolation(nondi_Trange, nondi_Prange);
+# nondi_PtoD = LinearInterpolation(nondi_Prange, nondi_Drange);
+# nondi_DtoP = LinearInterpolation(nondi_Drange, nondi_Prange);
 
 
 PtoT = LinearInterpolation(Prange, Trange);

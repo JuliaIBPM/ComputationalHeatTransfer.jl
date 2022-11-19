@@ -1,25 +1,29 @@
 export boiling_affect!,nucleateboiling,boiling_condition
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_interval = 0.1
-
-    # println("boiling_condition")
+    t_interval = integrator.p.wall.boil_interval
 
     ϵ = 1e-5
-
-    # println(t)
-    # println((abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ)
 
     return (abs(mod(t,t_interval)-t_interval) < ϵ) || mod(t,t_interval) < ϵ
 end
 
 function boiling_affect!(integrator)
 
-    # println("boiling_affect!")
-
-    Δθthreshold = integrator.p.wall.ΔTthres
+    # Δθthreshold = integrator.p.wall.ΔTthres
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p))
+
+    boil_type = p.wall.boil_type
+    fluid_type = p.tube.fluid_type
+    d = p.tube.d
+    Rn = p.wall.Rn
+
+    Tref = (PtoT.(maximum(p.vapor.P)) + PtoT.(minimum(p.vapor.P)))/2
+
+    Δθthreshold = RntoΔT(Rn,Tref,fluid_type,d)
+
+    # println(Δθthreshold)
   
     Δθ_array = getsuperheat.(p.wall.Xstations,[p])
     superheat_flag = Δθ_array .> Δθthreshold
@@ -29,13 +33,14 @@ function boiling_affect!(integrator)
 
         if ifamong(p.wall.Xstations[i], p.liquid.Xp, p.tube.L) && suitable_for_boiling(p,i) && superheat_flag[i]
 
-            Δθ = getsuperheat(p.wall.Xstations[i],p)
-          
                 push!(Main.boil_hist,[i,integrator.t]);
                 b_count += 1;
 
-                Pinsert = p.mapping.P_interp_liquidtowall(p.wall.Xstations[i])
-                # Pinsert = TtoP(p.mapping.θ_interp_walltoliquid(p.wall.Xstations[i]))
+                if boil_type == "liquid T"
+                    Pinsert = p.mapping.P_interp_liquidtowall(p.wall.Xstations[i])
+                elseif boil_type == "wall T"
+                    Pinsert = TtoP(p.mapping.θ_interp_walltoliquid(p.wall.Xstations[i]))
+                end
 
                 p = nucleateboiling(p,(p.wall.Xstations[i]-2p.tube.d,p.wall.Xstations[i]+2p.tube.d),Pinsert) # P need to be given from energy equation
         end
@@ -341,7 +346,3 @@ function suitable_for_boiling(p,i)
 
     return suitable_flag
 end
-
-
-#
-# end

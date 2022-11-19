@@ -1,4 +1,4 @@
-export getcurrentsys,getRTD,getconfig,getghist,getthist,getgt,getsysfinal,getwetness,getV,getδ
+export getcurrentsys,getRTD,getconfig,getghist,getthist,getgt,getsysfinal,getwetness,getV,getδ,getHtmp_marker
 
 using Statistics
 
@@ -213,4 +213,8 @@ function getδ(sysfinal)
     end
 
     δ_avg_start,δ_avg_end
+end
+
+function getHtmp_marker(Htmp,Hₗ,Hᵥ)
+    Htmp_marker = (Htmp < Hₗ + 1e-10) && (Htmp > Hₗ - 1e-10) ? 1.0 : (Htmp > Hᵥ + 1e-10) ? 2.0 : 0.0
 end

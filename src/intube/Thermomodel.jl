@@ -221,9 +221,9 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             he_dδdt_start_positive = dδdt_start_normal .> 0
             he_dδdt_end_positive = dδdt_end_normal .> 0
             he_dδdt_start_toobig = δstart .> 1e-4
-            he_dδdt_start_toosmall = δstart .< 3e-6
+            he_dδdt_start_toosmall = δstart .< 2e-6
             he_dδdt_end_toobig = δend .> 1e-4
-            he_dδdt_end_toosmall = δend .< 3e-6
+            he_dδdt_end_toosmall = δend .< 2e-6
 
             dδdt_start = (1 .- (he_dδdt_start_toosmall .* (1 .- he_dδdt_start_positive) .+ he_dδdt_start_toobig .* he_dδdt_start_positive)) .* dδdt_start_normal
             # println((1 .- div.((he_dδdt_end_toosmall .* (1 .- he_dδdt_end_positive) .+ he_dδdt_end_toobig .* he_dδdt_end_positive),2)))

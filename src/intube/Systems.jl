@@ -27,6 +27,7 @@ mutable struct Tube
     g::Float64
     closedornot::Bool
     N::Int64  
+    fluid_type::String
 end
 """
 Liquid is a struct containing liquid properties at a ref temperature
@@ -90,7 +91,9 @@ end
 """
 
 mutable struct Wall
-    ΔTthres::Float64
+    boil_type::String
+    boil_interval::Float64
+    Rn::Float64
     Xstations::Array{Float64,1}
     Xarray::Array{Float64,1}
     θarray::Array{Float64,1}

@@ -6,7 +6,8 @@ XptoLvaporplug,XptoLliquidslug,getXpvapor, # transfer Xp to the length of vapors
 ifamongone,ifamong,constructXarrays,
 duliquidθtovec,duwallθtovec,liquidθtovec,wallθtovec, # transfer temperature field to state vector for liquid and wall.
 Hfilm,getδarea,getδFromδarea,getMvapor,getMfilm,getMliquid,
-getCa,filmδcorr,getAdeposit,f_churchill,Catoδ
+getCa,filmδcorr,getAdeposit,f_churchill,Catoδ,RntoΔT
+
 
 """
     This function is a sub-function of getheight. This function is to get the actural physical height for one interface
@@ -591,12 +592,12 @@ function Hfilm(δfilm,sys)
     kₗ   = sys.vapor.k
     Hᵥ  = sys.vapor.Hᵥ
 
-    if δfilm > δmin
+    if δfilm > δthreshold
         return kₗ/δfilm
-    elseif δfilm > δthreshold
-        return  Hᵥ + δfilm*(kₗ/δmin - Hᵥ)/δmin
+    elseif δfilm > δmin
+        return  Hᵥ + (δfilm-δmin)*(kₗ/δthreshold - Hᵥ)/(δthreshold-δmin) + 1e-6
     else
-        return Hᵥ
+        return Hᵥ  + 1e-6
     end
 end
 
@@ -820,4 +821,15 @@ function Catoδ(d,Ca;adjust_factor=1,δmin=3e-6,δmax=1e-4)
     else 
         return δ
     end
+end
+
+function RntoΔT(Rn,Tref,fluid_type,d)
+    p_fluid = SaturationFluidProperty(fluid_type,Tref);
+
+    Rkg = p_fluid.R/p_fluid.M
+    Rin = d/2
+    P = TtoP(Tref)
+
+    y = Rkg .* Tref ./ (p_fluid.hᵥ-p_fluid.hₗ) .* log.(1 .+ 2 .* p_fluid.σ ./ P .* (1 ./ Rn .- 1/(2Rin)))
+    ΔTref = Tref .* (1 ./ (1 .- y) .- 1)
 end
