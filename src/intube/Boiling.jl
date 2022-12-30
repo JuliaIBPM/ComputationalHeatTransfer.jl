@@ -1,7 +1,7 @@
 export boiling_affect!,nucleateboiling,boiling_condition
 # boiling_condition,
 function boiling_condition(u,t,integrator)
-    t_interval = integrator.p.wall.boil_interval
+    t_interval = 1e-2
 
     ϵ = 1e-5
 
@@ -18,6 +18,7 @@ function boiling_affect!(integrator)
     fluid_type = p.tube.fluid_type
     d = p.tube.d
     Rn = p.wall.Rn
+    boil_interval = p.wall.boil_interval
 
     Tref = (PtoT.(maximum(p.vapor.P)) + PtoT.(minimum(p.vapor.P)))/2
 
@@ -26,11 +27,12 @@ function boiling_affect!(integrator)
     # println(Δθthreshold)
   
     Δθ_array = getsuperheat.(p.wall.Xstations,[p])
-    superheat_flag = Δθ_array .> Δθthreshold
+    superheat_flag = (Δθ_array .> Δθthreshold) .* ((integrator.t .- p.wall.boiltime_stations) .> boil_interval)
 
+    # println(p.wall.boiltime_stations)
     b_count = 0;
+    boiltime_update_flags = Bool.(zero(p.wall.boiltime_stations))
     for i = 1:length(p.wall.Xstations)
-
         if ifamong(p.wall.Xstations[i], p.liquid.Xp, p.tube.L) && suitable_for_boiling(p,i) && superheat_flag[i]
 
                 push!(Main.boil_hist,[i,integrator.t]);
@@ -41,10 +43,18 @@ function boiling_affect!(integrator)
                 elseif boil_type == "wall T"
                     Pinsert = TtoP(p.mapping.θ_interp_walltoliquid(p.wall.Xstations[i]))
                 end
-
                 p = nucleateboiling(p,(p.wall.Xstations[i]-2p.tube.d,p.wall.Xstations[i]+2p.tube.d),Pinsert) # P need to be given from energy equation
+                boiltime_update_flags[i] = true
+                # p.wall.boiltime_stations[i] = integrator.t
+            elseif !ifamong(p.wall.Xstations[i], p.liquid.Xp, p.tube.L)
+                boiltime_update_flags[i] = true
+                # p.wall.boiltime_stations[i] = integrator.t
         end
     end
+
+    boiltime_stations = p.wall.boiltime_stations + boiltime_update_flags .* (integrator.t .- p.wall.boiltime_stations)
+    integrator.p.wall.boiltime_stations = boiltime_stations
+    
 
     Lvaporplug = XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
     Ac = p.tube.Ac
@@ -61,6 +71,8 @@ function boiling_affect!(integrator)
 
     volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
     M = PtoD.(p.vapor.P) .* volume_vapor
+
+    # println(p.wall.boiltime_stations)
 
 
     unew=[XMδLtovec(p.liquid.Xp,p.liquid.dXdt,M,p.vapor.δstart,δend,Lfilm_start,Lfilm_end);liquidθtovec(p.liquid.θarrays)];

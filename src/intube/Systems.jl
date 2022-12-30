@@ -95,6 +95,7 @@ mutable struct Wall
     boil_interval::Float64
     Rn::Float64
     Xstations::Array{Float64,1}
+    boiltime_stations::Array{Float64,1}
     Xarray::Array{Float64,1}
     θarray::Array{Float64,1}
 end
