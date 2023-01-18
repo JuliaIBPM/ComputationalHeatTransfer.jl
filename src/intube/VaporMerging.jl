@@ -1,10 +1,10 @@
-export vaporMergingAffect!,vaporMergingCondition
+export vaporMergingAffect!,vaporMergingCondition,vaporMerging
 
 function vaporMergingAffect!(integrator)
     println("vapor merged!")
 
     p = deepcopy(getcurrentsys(integrator.u,integrator.p));
-    δv = p.tube.d
+    δv = 3p.tube.d
 
     L = p.tube.L;
 
@@ -45,7 +45,7 @@ end
 function vaporMergingCondition(u,t,integrator)     # only for closed loop tube
 
     sys = deepcopy(getcurrentsys(integrator.u,integrator.p));
-    δv = sys.tube.d
+    δv = 3sys.tube.d
     merge_flags = getVaporMergeFlags(δv,sys)
 
     return sum(merge_flags) != 0
@@ -54,13 +54,25 @@ end
 
 function vaporMerging(p,i)
 
-        # get the liquid interface velocities and lengthes for merging
-    Lliquidslug = XptoLliquidslug(p.liquid.Xp,p.tube.L)
+    Ac = p.tube.Ac
+    ρₗ = p.liquid.ρ
+
+    # get the total mass before merging
+    Mvapor_old = getMvapor(p);
+    Mfilm_old = sum(getMfilm(p));
+    Mliquid_old = getMliquid(p);
+    
+    Mold = sum(Mvapor_old + Mfilm_old + Mliquid_old)
+
+
+    # get the liquid interface velocities and lengthes for merging
+    Lliquidslug_old = XptoLliquidslug(p.liquid.Xp,p.tube.L)
     Lvaporplug =  XptoLvaporplug(p.liquid.Xp,p.tube.L,p.tube.closedornot)
 
 
 # get compensated L of merged liquid slug for mass conservation
-    # left_index = i > 1 ? i-1 : length(Lvaporplug)
+    left_index_after = [length(Lvaporplug)-1;1:(length(Lvaporplug)-1)]
+    right_index_after = [1:length(Lvaporplug)-1;1]
     right_index = [2:length(Lvaporplug);1]
 
 
@@ -98,7 +110,36 @@ function vaporMerging(p,i)
             splice!(systemp.vapor.P,1);
             insert!(systemp.vapor.P,1,(p.vapor.P[i]+p.vapor.P[right_index[i]])/2)
         end
+    
+    # get the total mass after deleting liquid slugs merging
+    Mvapor_temp = getMvapor(systemp);
+    Mfilm_temp = sum(getMfilm(systemp));
+    Mliquid_temp = getMliquid(systemp);
+        
+    Mtemp = sum(Mvapor_temp + Mfilm_temp + Mliquid_temp)
 
+    Mdiff = Mold - Mtemp
+
+
+    println(sum(Mdiff))
+    println(sum(Mold))
+    println(sum(Mtemp))
+
+    A = (Mdiff / Ac / (ρₗ - PtoD(systemp.vapor.P[right_index_after[i]])))
+    B = (Lliquidslug_old[i] + p.vapor.Lfilm_end[i] + p.vapor.Lfilm_start[right_index[i]])
+
+    L_lengthen =  A < B ? A : B
+
+    Xp_new = deepcopy(systemp.liquid.Xp)
+
+    Xp_new[right_index_after[i]] = (Xp_new[right_index_after[i]][1] - L_lengthen/2,Xp_new[right_index_after[i]][2])
+    Xp_new[left_index_after[i]] = (Xp_new[left_index_after[i]][1],Xp_new[left_index_after[i]][2] + L_lengthen/2)
+
+    systemp.liquid.Xp = Xp_new
+
+    # println(L_lengthen)
+    # println(A)
+    # println(Mdiff)
 
     return deepcopy(systemp)
 end

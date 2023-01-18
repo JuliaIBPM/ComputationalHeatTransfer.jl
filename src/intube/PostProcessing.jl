@@ -40,15 +40,15 @@ function getcurrentsys(u,sys0)
 
     Ac = sysnew.tube.Ac
 
-
     d = sys0.tube.d
     δarea_start = Ac .* (1 .- ((d .- 2*δstart) ./ d) .^ 2);
     δarea_end = Ac .* (1 .- ((d .- 2*δend) ./ d) .^ 2);
 
     volume_vapor = Lvaporplug .* Ac - Lfilm_start .* δarea_start - Lfilm_end .* δarea_end
     ρ = M ./ volume_vapor
-    # println(δarea_end[4:6])
-    # println(findmax(ρ))
+    # println(δstart)
+    # println(δend)
+    # println(volume_vapor ./ Lvaporplug)
     P = DtoP.(ρ)
   
     sysnew.vapor.P = P

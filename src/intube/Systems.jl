@@ -73,7 +73,6 @@ mutable struct Vapor
     δmin::Float64
     Eratio::Float64
     P::Array{Float64,1}
-    # δ::Array{Float64,1}
     δfilm_deposit::Float64
     δstart::Array{Float64,1}
     δend::Array{Float64,1}
@@ -91,9 +90,11 @@ end
 """
 
 mutable struct Wall
+    fluid_type::String
     boil_type::String
     boil_interval::Float64
     Rn::Float64
+    L_newbubble::Float64
     Xstations::Array{Float64,1}
     boiltime_stations::Array{Float64,1}
     Xarray::Array{Float64,1}

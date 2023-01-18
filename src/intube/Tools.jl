@@ -588,12 +588,15 @@ end
 
 function Hfilm(δfilm,sys)
     δmin = sys.vapor.δmin;
-    δthreshold = 1e-5
+    δthreshold = 5e-6
+    δmax = 1e-4
     kₗ   = sys.vapor.k
     Hᵥ  = sys.vapor.Hᵥ
 
-    if δfilm > δthreshold
+    if (δfilm > δthreshold) && (δfilm < δmax)
         return kₗ/δfilm
+    elseif (δfilm > δmax) && (δfilm < 2δmax)
+        return  kₗ/δmax - (δfilm-δmax)*(kₗ/δmax^2) + 1e-6
     elseif δfilm > δmin
         return  Hᵥ + (δfilm-δmin)*(kₗ/δthreshold - Hᵥ)/(δthreshold-δmin) + 1e-6
     else

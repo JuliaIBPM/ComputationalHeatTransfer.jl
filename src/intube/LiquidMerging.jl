@@ -58,10 +58,22 @@ function merging(p,i)
 
 # get compensated L of merged liquid slug for mass conservation
     left_index = i > 1 ? i-1 : length(Lvaporplug)
+    right_index = i < length(Lvaporplug) ? i+1 : 1
   
     L = p.tube.L
+    Ac = p.tube.Ac
+    ρₗ = p.liquid.ρ
+
+    Mvapor = getMvapor(p)
+    Mfilm = getMfilm(p);
+
+    # Msection_before = Mvapor[left_index] + Mvapor[i] + Mvapor[i+1] + Mfilm[1][i] + Mfilm[2][i] + Mfilm[1][i] + Mfilm[2][i]
+
+    Linsert = (Mvapor[i] + Mfilm[1][i] + Mfilm[2][i] - 0.5 .* Ac .* Lvaporplug[i] .* (PtoD(p.vapor.P[left_index]) .+ PtoD(p.vapor.P[right_index]))) ./ (ρₗ .* Ac .- 0.5 .* Ac .* (PtoD(p.vapor.P[left_index]) .+ PtoD(p.vapor.P[right_index])))
+    # println(Linsert)
+    # Linsert = (Mvapor[i] + Mfilm[1][i] + Mfilm[2][i] - Lvaporplug[i] * p.tube.Ac * PtoD(p.vapor.P[i])) ./ p.tube.Ac ./ p.liquid.ρ
     
-    Xpnewone = mod(p.liquid.Xp[left_index][1]+Lvaporplug[i]/2,L), mod(p.liquid.Xp[i][end] - Lvaporplug[i]/2,L)
+    Xpnewone = mod(p.liquid.Xp[left_index][1]+Lvaporplug[i]/2 - Linsert/2,L), mod(p.liquid.Xp[i][end] - Lvaporplug[i]/2 + Linsert/2,L)
 
     dXdtnewonevalue = (i != 1) ? (p.liquid.dXdt[i-1][1]*Lliquidslug[i-1] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[i-1]+Lliquidslug[i]) : (p.liquid.dXdt[end][1]*Lliquidslug[end] + p.liquid.dXdt[i][end]*Lliquidslug[i])/(Lliquidslug[end]+Lliquidslug[i])
         #    println("hahaha")
