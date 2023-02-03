@@ -20,7 +20,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
     angle = sys.tube.angle
     g = sys.tube.g
     P = sys.vapor.P
-    Eratio = sys.vapor.Eratio
+    Eratio_plus = sys.vapor.Eratio_plus
+    Eratio_minus = sys.vapor.Eratio_minus
     δstart = sys.vapor.δstart
     δend = sys.vapor.δend
     Lfilm_start = sys.vapor.Lfilm_start
@@ -91,6 +92,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
 
             dMdt_latent_start,dMdt_sensible,dMdt_latent_end = dMdtdynamicsmodel(Xpvapor,sys)
             dMdt_latent_start_positive,dMdt_sensible_positive,dMdt_latent_end_positive = dMdtdynamicsmodel_positive(Xpvapor,sys)
+            dMdt_latent_start_negative = dMdt_latent_start .- dMdt_latent_start_positive
+            dMdt_latent_end_negative =   dMdt_latent_end   .- dMdt_latent_end_positive
 
             F_start = ρₗ .* Ac .* 4 .* δstart .* (d .- δstart) ./ (d^2)
             C_start = ρₗ .* Ac .* 4 .* (d .- 2δstart) ./ (d^2)
@@ -101,8 +104,8 @@ function dynamicsmodel(u::Array{Float64,1},p::PHPSystem)
             L0threshold_film = 4e-4
             L0threshold_pure_vapor = 1e-3
 
-            dLdt_start_normal = (-dMdt_latent_start_positive .* Eratio) ./ F_start - v_vapor_left_normal
-            dLdt_end_normal = (-dMdt_latent_end_positive .* Eratio) ./ F_end + v_vapor_right_normal
+            dLdt_start_normal = -(dMdt_latent_start_positive .* Eratio_plus .+ dMdt_latent_start_negative .* Eratio_minus) ./ F_start - v_vapor_left_normal
+            dLdt_end_normal = -(dMdt_latent_end_positive .* Eratio_plus .+ dMdt_latent_end_negative .* Eratio_minus) ./ F_end + v_vapor_right_normal
 
             he_start_short = Bool.(heaviside.(-Lfilm_start .+ L0threshold_film))
             he_end_short = Bool.(heaviside.(-Lfilm_end .+ L0threshold_film))

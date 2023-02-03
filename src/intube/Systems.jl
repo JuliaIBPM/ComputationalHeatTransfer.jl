@@ -71,7 +71,8 @@ mutable struct Vapor
     Hᵥ::Float64
     k::Float64
     δmin::Float64
-    Eratio::Float64
+    Eratio_plus::Float64
+    Eratio_minus::Float64
     P::Array{Float64,1}
     δfilm_deposit::Float64
     δstart::Array{Float64,1}

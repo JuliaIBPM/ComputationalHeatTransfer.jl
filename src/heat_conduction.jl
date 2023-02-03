@@ -324,15 +324,6 @@ update_immersion_operators!(sys::HeatConduction,u,sys_old::HeatConduction,t) =
 Set the grid cell spacing and time step size based on the thermal diffusivity `α`,
 the grid Peclet number `gridPe`, cfl number `cfl`, and grid Fourier number `fourier`.
 The last three parameters all have default values.
-
-# Example
-
-Here is an example of setting parameters based on Reynolds number 100 (with
-  default choices for grid Reynolds number, CFL number, and Fourier number):
-```jldoctest
-julia> Δx, Δt = setstepsizes(100)
-(0.02, 0.01)
-```
 """
 function setstepsizes(α::Real; gridPe = 2.0, cfl = 0.5, fourier = 0.5)
     Δx = α*gridPe
