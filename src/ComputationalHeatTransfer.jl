@@ -11,4 +11,8 @@ function add(x,y)
     z = x + y
 end
 
+function subtract(x,y)
+    z = x - y
+end
+
 end
