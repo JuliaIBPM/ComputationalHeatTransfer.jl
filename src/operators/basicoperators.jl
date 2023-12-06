@@ -10,8 +10,8 @@ function heatconduction_rhs!(dT::Nodes{Primal,NX,NY},T::Nodes{Primal,NX,NY},sys:
   dT .= 0.0
   #_heatconduction_rhs_convectivederivative!(sys.Sc,T,sys,t)
   #_heatconduction_rhs_double_layer!(dT,sys,t)
-  _heatconduction_rhs_double_layer_adiabatic!(dT,T,sys,sys.bctype)
-  _heatconduction_rhs_forcing!(dT,sys,t)
+  # _heatconduction_rhs_double_layer_adiabatic!(dT,T,sys,sys.bctype)
+  # _heatconduction_rhs_forcing!(dT,sys,t)
   _heatconduction_rhs_qflux!(dT,sys)
   _heatconduction_rhs_qmodel!(dT,T,sys)
   _heatconduction_rhs_qline!(dT,sys)
