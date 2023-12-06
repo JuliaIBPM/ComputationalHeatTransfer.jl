@@ -127,6 +127,10 @@ mutable struct HeatConduction{NX, NY, N, MT<:PointMotionType, SD<:ProblemSide, D
     σ::ScalarData{N,Float64}
     τ::ScalarData{N,Float64}
 
+    # ADI Laplacians
+    DDx
+    DDy
+
 end
 
 function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tuple{Real,Real},ylimits::Tuple{Real,Real}, Δt::Real;
@@ -216,7 +220,7 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
 
     end
 
-
+    DDx,DDy = ADI_laplacian!(NX-1,NY-1)
 
     HeatConduction{NX, NY, N, _motiontype(static_points), problem_side_internal, ddftype, typeof(f), typeof(state_prototype)}(
                           params, bodies, bctype, bodytemps, qforce,
@@ -226,7 +230,7 @@ function HeatConduction(params::HeatConductionParameters, Δx::Real, xlimits::Tu
                           g, Δt, # rk,
                           dlc,
                           points, normals, Rc, Ec, Rf, Ef, Cc,
-                          f,state_prototype,Sc,Sb,Vf,gradTf,Vb,gradTb,ΔTs,σ,τ)
+                          f,state_prototype,Sc,Sb,Vf,gradTf,Vb,gradTb,ΔTs,σ,τ,DDx,DDy)
 
 end
 
@@ -320,19 +324,10 @@ update_immersion_operators!(sys::HeatConduction,u,sys_old::HeatConduction,t) =
 Set the grid cell spacing and time step size based on the thermal diffusivity `α`,
 the grid Peclet number `gridPe`, cfl number `cfl`, and grid Fourier number `fourier`.
 The last three parameters all have default values.
-
-# Example
-
-Here is an example of setting parameters based on Reynolds number 100 (with
-  default choices for grid Reynolds number, CFL number, and Fourier number):
-```jldoctest
-julia> Δx, Δt = setstepsizes(100)
-(0.02, 0.01)
-```
 """
 function setstepsizes(α::Real; gridPe = 2.0, cfl = 0.5, fourier = 0.5)
     Δx = α*gridPe
-    Δt = fourier*Δx^2
+    Δt = fourier*Δx^2/α
     return Δx, Δt
 end
 
@@ -518,3 +513,4 @@ include("operators/basicoperators.jl")
 include("operators/surfaceoperators.jl")
 include("operators/movingbodyoperators.jl")
 include("operators/timemarching.jl")
+include("operators/ADIsolver.jl")
