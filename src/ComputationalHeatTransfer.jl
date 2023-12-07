@@ -2,7 +2,7 @@ module ComputationalHeatTransfer
 
 using DocStringExtensions
 using Reexport
-using Revise
+# using Revise
 using LinearAlgebra
 
 @reexport using CartesianGrids
