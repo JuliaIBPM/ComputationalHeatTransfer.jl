@@ -61,7 +61,7 @@ function heatconduction_ode_rhs!(dT,T,x,sys::ILMSystem,t)
 
     # Compute the contribution from the forcing models to the right-hand side
     fill!(dT_tmp,0.0)
-    apply_forcing!(dT_tmp,T,t,fcache,phys_params)
+    apply_forcing!(dT_tmp,T,x,t,fcache,sys)
     dT .+= dT_tmp
 
     return dT
@@ -187,7 +187,7 @@ function heatconduction_ode_explicit_rhs!(dT,T,x,sys::ILMSystem,t)
 
     fill!(dT,0.0)
     # Compute the contribution from the forcing models to the right-hand side
-    apply_forcing!(dT,T,t,fcache,phys_params)
+    apply_forcing!(dT,T,x,t,fcache,sys)
 
     # This provides the convection velocity at time `t`
     convection_function = get_convection_velocity_function(phys_params)
