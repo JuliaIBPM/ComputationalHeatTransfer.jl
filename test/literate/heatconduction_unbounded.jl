@@ -50,7 +50,7 @@ at frequency $f$
 * a background rotational velocity field, with angular velocity $\Omega$.
 =#
 
-using ImmersedLayers
+using ComputationalHeatTransfer
 #!jl using Plots
 using UnPack
 
@@ -139,10 +139,17 @@ temperature(T,σ,x,sys::ILMSystem,t) = T
 @snapshotoutput temperature
 
 #=
+We pack the forcing and convection together into the _forcing_ [`Dict`](@ref).
+=#
+
+forcing_dict = Dict("heating models" => [lfm,afm],
+                    "convection velocity model" => my_velocity!)
+
+#=
 ## Set up the problem and system
 This is similar to previous problems.
 =#
-prob = UnboundedHeatConductionProblem(g,scaling=GridScaling,
+prob = DirichletHeatConductionProblem(g,scaling=GridScaling,
                                         phys_params=phys_params,
                                         forcing=forcing_dict,
                                         timestep_func=timestep_fourier_cfl)
