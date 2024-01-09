@@ -39,7 +39,7 @@ abstract type HomogeneousDirichletBC <: DirichletBC end
 const NDIM = 2
 
 include("utils/forcing.jl")
-include("utils/ohp.jl")
+# include("utils/ohp.jl")
 include("heat_conduction.jl")
 # include("OneDOHP.jl")
 # include("fileIO.jl")
