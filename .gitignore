@@ -20,3 +20,4 @@ docs/build/
 # vim swap files
 *.swp
 
+.vscode/settings.json
