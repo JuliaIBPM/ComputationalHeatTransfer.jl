@@ -126,35 +126,6 @@ get_Tbminus(t,x,base_cache,phys_params,motions) = ones_surface(base_cache)
 bcdict = Dict("exterior" => get_Tbplus,"interior" => get_Tbminus)
 
 #=
-We also add a forcing for the heating region
-=#
-fregion1 = Square(0.5,1.4*Δx)
-T = RigidTransform((0.0,1.0),0.0)
-update_body!(fregion1,T)
-
-function model1!(σ,T,t,fr::LineRegionCache,phys_params)
-    σ .= phys_params["lineheater_flux"]
-end
-lfm = LineForcingModel(fregion1,model1!);
-
-#=
-And for the convection velocity model
-=#
-function my_velocity!(vel,t,cache,phys_params)
-    xg, yg = x_gridgrad(cache), y_gridgrad(cache)
-    Ω = phys_params["angular velocity"]
-    vel.u .= -Ω*yg.u
-    vel.v .= Ω*xg.v
-    return vel
-end
-
-#=
-Now we set up a forcing dict, which will get passed in as parameters to the problem
-=#
-forcing_dict = Dict("heating models" => lfm,
-                    "convection velocity model" => my_velocity!)
-
-#=
 Construct the problem, passing in the data and functions we've just
 created. We pass in the body's motion (however trivial) via the
 `motions` keyword.

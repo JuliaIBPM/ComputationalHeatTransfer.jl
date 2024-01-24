@@ -37,6 +37,14 @@ function get_convection_velocity_function(phys_params::Dict)
     return get(phys_params,"convection velocity model",DEFAULT_CONVECTION_VELOCITY_FUNCTION)
 end
 
+function get_heating_model(forcing::Dict)
+	return get(forcing,"heating models",nothing)
+end
+
+function get_heating_model(forcing::Nothing)
+	return get_heating_model(Dict())
+end
+
 #####################################################################
 
 # Calculate the RHS of the ODE
@@ -53,6 +61,10 @@ function heatconduction_ode_rhs!(dT,T,x,sys::ILMSystem,t)
     # This provides the convection velocity at time `t`
     convection_function = get_convection_velocity_function(phys_params)
     convection_function(v,t,base_cache,phys_params)
+
+    # This provides the heating model at time `t`
+    # heating_function = get_heating_model_function(phys_params)
+    # heating_function(T,x,fcache,phys_params)
 
     # Compute the convective derivative term `N(v,T)`
     fill!(dT_tmp,0.0)
@@ -138,7 +150,8 @@ function ImmersedLayers.prob_cache(prob::DirichletHeatConductionProblem,
     cdcache = ConvectiveDerivativeCache(base_cache)
 
     # Create cache for the forcing regions
-    fcache = ForcingModelAndRegion(forcing["heating models"],base_cache);
+    heating_model = get_heating_model(forcing)
+    fcache = ForcingModelAndRegion(heating_model,base_cache)
 
     # The state here is temperature
     f = _get_dirichlet_ode_function_list(heat_L,base_cache)
