@@ -134,7 +134,6 @@ prob = DirichletHeatConductionProblem(g,body,scaling=GridScaling,
                                              phys_params=phys_params,
                                              bc=bcdict,
                                              motions=m,
-                                             forcing=forcing_dict,
                                              timestep_func=timestep_fourier);
 
 #=
