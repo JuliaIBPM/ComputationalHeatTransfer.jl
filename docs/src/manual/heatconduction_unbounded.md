@@ -55,7 +55,6 @@ at frequency $f$
 ````@example heatconduction_unbounded
 using ComputationalHeatTransfer
 using Plots
-using UnPack
 ````
 
 ### Set up the grid
