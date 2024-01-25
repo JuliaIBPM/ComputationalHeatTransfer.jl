@@ -1,4 +1,4 @@
-using Documenter, ViscousFlow
+using Documenter, ComputationalHeatTransfer
 
 ENV["GKSwstype"] = "nul" # removes GKS warnings during plotting
 
