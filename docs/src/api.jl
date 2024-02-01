@@ -3,20 +3,20 @@
 # I'm assuming the bc = nothing refers to the situation where no boundary is immersed
 # This means that we'll need four statements (because each dirichlet and neumann has a boundary and boundary-less problem)
 
-setup_problem(g;kwargs...) =
+setup_Dirichlet_problem(g;kwargs...) =
     DirichletHeatConductionProblem(g;timestep_func=DEFAULT_TIMESTEP_FUNC,
                                        kwargs...)
 
-setup_problem(g,bl;bc=nothing,kwargs...) =
+setup_Dirichlet_problem(g,bl;bc=nothing,kwargs...) =
     DirichletHeatConductionProblem(g,bl;timestep_func=DEFAULT_TIMESTEP_FUNC,
                                        bc=get_bc_func(bc),
                                        kwargs...)
 
-setup_problem(g;kwargs...) =
+setup_Neumann_problem(g;kwargs...) =
     NeumannHeatConductionProblem(g;timestep_func=DEFAULT_TIMESTEP_FUNC,
                                      kwargs...)
 
-setup_problem(g,bl;bc=nothing,kwargs...) =
+setup_Neumann_problem(g,bl;bc=nothing,kwargs...) =
     NeumannHeatConductionProblem(g,bl;timestep_func=DEFAULT_TIMESTEP_FUNC,
                                 bc=get_bc_func(bc),
                                 kwargs...)
@@ -25,7 +25,7 @@ setup_problem(g,bl;bc=nothing,kwargs...) =
     setup_grid(xlim::Tuple,ylim::Tuple,phys_params::Dict[;nthreads_max=length(Sys.cpu_info())])
 
 Construct a Cartesian grid with limits `xlim` and `ylim`
-and spacing determined by the Reynolds number in the `phys_params`.
+and spacing determined by user input.
 The maximum number of threads can be optionally set; it defaults
 to the number of processor cores.
 """
@@ -46,9 +46,9 @@ function surface_point_spacing(g::PhysicalGrid,phys_params)
 end
 
 """
-    viscousflow_system(grid,[bodies];kwargs...)
+    heattransfer_system(grid,[bodies];kwargs...)
 
-Construct the operators and cache variables for a viscous flow problem.
+Construct the operators and cache variables for a heat transfer problem.
 
 The `kwargs` are the optional keyword aguments. There are several, some of
 which are crucial for certain types of problems.
