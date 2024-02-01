@@ -1,12 +1,12 @@
-using Documenter, ViscousFlow
+using Documenter, ComputationalHeatTransfer
 
 ENV["GKSwstype"] = "nul" # removes GKS warnings during plotting
 
 makedocs(
-    sitename = "ViscousFlow.jl",
+    sitename = "ComputationalHeatTransfer.jl",
     doctest = true,
     clean = true,
-    modules = [ViscousFlow],
+    modules = [ComputationalHeatTransfer],
     pages = [
         "Home" => "index.md",
         "Manual" => ["manual/heatconduction_dirichlet.md",
@@ -32,7 +32,7 @@ makedocs(
 
 #if "DOCUMENTER_KEY" in keys(ENV)
 deploydocs(
-     repo = "github.com/JuliaIBPM/ViscousFlow.jl.git",
+     repo = "github.com/JuliaIBPM/ComputationalHeatTransfer.jl.git",
      target = "build",
      deps = nothing,
      make = nothing
