@@ -179,9 +179,3 @@ sol = integrator.sol
 #!jl    plot!(plt[i],temperature(sol,sys,t),sys,levels=range(-10,2,length=30),clim=(-10,2))
 #!jl end
 #!jl plt
-
-#md # ## Forcing functions
-
-#md # ```@docs
-#md # points(::PointCollectionCache)
-#md # ```
