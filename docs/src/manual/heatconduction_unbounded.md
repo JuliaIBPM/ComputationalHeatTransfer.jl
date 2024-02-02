@@ -157,7 +157,9 @@ forcing_dict = Dict("heating models" => [lfm,afm],
 ````
 
 ## Set up the problem and system
-This is similar to previous problems.
+This is similar to previous problems. Note that we treat it
+as a Dirichlet problem, even though
+there is no boundary.
 
 ````@example heatconduction_unbounded
 prob = DirichletHeatConductionProblem(g,scaling=GridScaling,
