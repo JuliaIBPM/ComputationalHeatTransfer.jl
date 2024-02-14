@@ -93,7 +93,7 @@ associated model function is very simple, since it just sets the
 strength uniformly. But note the function signature, which must always take this
 form. It can make use of the current temperature, time, and physical parameters,
 to return the strength of the line forcing. We bundle these together
-using [`LineForcingModel`](@ref).
+using `LineForcingModel`.
 
 ````@example heatconduction_unbounded
 fregion1 = Square(0.5,1.4*Δx)
@@ -108,7 +108,7 @@ nothing #hide
 
 Now the oscillatory heater, which we place at $(0,-0.5)$. This one has a few more parameters,
 since we provide the heat transfer coefficient and the amplitude and frequency
-of the target temperature. These are bundled with [`AreaForcingModel`](@ref).
+of the target temperature. These are bundled with `AreaForcingModel`.
 
 ````@example heatconduction_unbounded
 fregion2 = Circle(0.2,1.4*Δx)
@@ -125,7 +125,7 @@ nothing #hide
 ````
 
 Finally, the convection velocity model. Here, we make use of the
-coordinate function [`x_gridgrad`](@ref) and [`y_gridgrad`](@ref)
+coordinate function `x_gridgrad` and `y_gridgrad`
 to supply the coordinates of the velocity grid points. Since this
 is a staggered grid, the velocity components live at different places.
 For example, `yg.u` denotes the $y$ coordinates for the horizontal velocity
@@ -149,7 +149,7 @@ temperature(T,σ,x,sys::ILMSystem,t) = T
 @snapshotoutput temperature
 ````
 
-We pack the forcing and convection together into the _forcing_ [`Dict`](@ref).
+We pack the forcing and convection together into the _forcing_ `Dict`.
 
 ````@example heatconduction_unbounded
 forcing_dict = Dict("heating models" => [lfm,afm],
@@ -157,7 +157,9 @@ forcing_dict = Dict("heating models" => [lfm,afm],
 ````
 
 ## Set up the problem and system
-This is similar to previous problems.
+This is similar to previous problems. Note that we treat it
+as a Dirichlet problem, even though
+there is no boundary.
 
 ````@example heatconduction_unbounded
 prob = DirichletHeatConductionProblem(g,scaling=GridScaling,
@@ -196,12 +198,6 @@ for (i,t) in enumerate(0:0.2:1.0)
 end
 plt
 ````
-
-## Forcing functions
-
-```@docs
-points(::PointCollectionCache)
-```
 
 ---
 

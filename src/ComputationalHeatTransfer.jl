@@ -121,9 +121,11 @@ function timestep_fourier_cfl(u,sys)
 end
 
 # Set up extra cache - Dirichlet problem
+ 
 @ilmproblem DirichletHeatConduction scalar
 
 # Structure cache for DirichletHeatConduction
+
 struct DirichletHeatConductionCache{VT,CDT,FRT,DTST,DTT,FT} <: AbstractExtraILMCache
     v :: VT
     cdcache :: CDT
@@ -134,6 +136,7 @@ struct DirichletHeatConductionCache{VT,CDT,FRT,DTST,DTT,FT} <: AbstractExtraILMC
 end
 
 # Testing Method Dispatch - Dirichlet and Unbounded
+
 function ImmersedLayers.prob_cache(prob::DirichletHeatConductionProblem,
                                     base_cache::BasicILMCache{N,scaling}) where {N,scaling}
     @unpack phys_params, forcing = prob
@@ -255,9 +258,11 @@ function heatconduction_neumann_bc_reg!(dqb,Tjump,x,sys::ILMSystem)
 end
 
 # Set up extra cache - Neumann problem
+
 @ilmproblem NeumannHeatConduction scalar
 
 # Structure cache for NeumannHeatConduction
+
 struct NeumannHeatConductionCache{VT,CDT,DTT,GT,GVT,FRT,FT} <: AbstractExtraILMCache
     v :: VT
     cdcache :: CDT
@@ -270,6 +275,7 @@ struct NeumannHeatConductionCache{VT,CDT,DTT,GT,GVT,FRT,FT} <: AbstractExtraILMC
 end
 
 # Method dispatch - problem cache for NeumannHeatConductionProblem
+
 function ImmersedLayers.prob_cache(prob::NeumannHeatConductionProblem,
                                 base_cache::BasicILMCache{N,scaling}) where {N,scaling}
 

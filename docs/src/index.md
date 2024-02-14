@@ -1,11 +1,11 @@
-# ViscousFlow.jl
+# ComputationalHeatTransfer.jl
 
-*a framework for simulating viscous incompressible flows*
+*a framework for simulating heat transfer in complex geometries *
 
-The objective of this package is to allow easy setup and fast simulation of incompressible
-flows, particularly those past bodies in motion. The package provides
+The objective of this package is to allow easy setup and fast simulation of heat transfer, particularly in complex
+geometries. The package provides
 tools for
-- constructing grids and body shapes,
+- constructing grids, body shapes, and heating/cooling regions,
 - specifying the relevant parameters and setting their values,
 - solving the problem, and finally,
 - visualizing and analyzing the results.
@@ -20,15 +20,15 @@ an extension of the immersed boundary projection method [^3]. The solver is impl
 
 ## Installation
 
-This package works on Julia `1.4` and above and is registered in the general Julia registry. To install from the REPL, type
+This package works on Julia `1.6` and above and is registered in the general Julia registry. To install from the REPL, type
 e.g.,
 ```julia
-] add ViscousFlow
+] add ComputationalHeatTransfer
 ```
 
 Then, in any version, type
 ```julia
-julia> using ViscousFlow
+julia> using ComputationalHeatTransfer
 ```
 
 The plots in this documentation are generated using [Plots.jl](http://docs.juliaplots.org/latest/).

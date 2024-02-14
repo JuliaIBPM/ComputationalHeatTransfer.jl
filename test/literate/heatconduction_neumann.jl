@@ -157,7 +157,7 @@ bcdict = Dict("exterior" => get_qbplus,"interior" => get_qbminus)
 #=
 Construct the problem, passing in the data and functions we've just
 created. We pass in the body's motion (however trivial) via the
-`motions` keyword.
+`motions` keyword. We run `NeumannHeatConductionProblem`.
 =#
 prob = NeumannHeatConductionProblem(g,body,scaling=GridScaling,
                                              phys_params=phys_params,

@@ -131,7 +131,7 @@ bcdict = Dict("exterior" => get_Tbplus,"interior" => get_Tbminus)
 
 Construct the problem, passing in the data and functions we've just
 created. We pass in the body's motion (however trivial) via the
-`motions` keyword.
+`motions` keyword. We run `DirichletHeatConductionProblem`.
 
 ````@example heatconduction_dirichlet
 prob = DirichletHeatConductionProblem(g,body,scaling=GridScaling,

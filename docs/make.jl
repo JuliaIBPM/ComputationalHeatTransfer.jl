@@ -11,7 +11,8 @@ makedocs(
         "Home" => "index.md",
         "Manual" => ["manual/heatconduction_dirichlet.md",
                     "manual/heatconduction_neumann.md",
-                    "manual/heatconduction_unbounded.md"
+                    "manual/heatconduction_unbounded.md",
+                    "manual/functions.md"
                      ]
         #"Internals" => [ "internals/properties.md"]
     ],
