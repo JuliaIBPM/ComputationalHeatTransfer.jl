@@ -27,6 +27,8 @@ export heatconduction_neumann_constraint_force
 export heatconduction_neumann_bc_op
 export heatconduction_neumann_bc_reg
 
+export temperature
+
 
 
 include("defaults.jl")
