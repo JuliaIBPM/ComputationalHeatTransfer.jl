@@ -16,11 +16,9 @@ solved with the integrating factor (Liska and Colonius [^2]). Many of the core a
 of the fluid-body interaction are based on the Method of Immersed Layers [^1], [ImmersedLayers](https://github.com/JuliaIBPM/ImmersedLayers.jl), which is
 an extension of the immersed boundary projection method [^3]. The solver is implemented with the [ConstrainedSystems](https://github.com/JuliaIBPM/ConstrainedSystems.jl) package. Tools for creating bodies and their motions are based on the [RigidBodyTools](https://github.com/JuliaIBPM/RigidBodyTools.jl) package.
 
-![](https://github.com/JuliaIBPM/ViscousFlow.jl/raw/master/cylinderRe400.gif)
-
 ## Installation
 
-This package works on Julia `1.6` and above and is registered in the general Julia registry. To install from the REPL, type
+This package works on Julia `1.10` and above and is registered in the general Julia registry. To install from the REPL, type
 e.g.,
 ```julia
 ] add ComputationalHeatTransfer
