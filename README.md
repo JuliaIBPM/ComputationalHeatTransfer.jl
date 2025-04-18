@@ -1,7 +1,7 @@
 # ComputationalHeatTransfer.jl
 tools for numerical simulation of conductive and convective heat transfer
 
-
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaIBPM.github.io/ComputationalHeatTransfer.jl/stable) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaIBPM.github.io/ComputationalHeatTransfer.jl/dev)
 [![Build Status](https://github.com/JuliaIBPM/ComputationalHeatTransfer.jl/workflows/CI/badge.svg)](https://github.com/JuliaIBPM/ComputationalHeatTransfer.jl/actions)
 [![Coverage](https://codecov.io/gh/JuliaIBPM/ComputationalHeatTransfer.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaIBPM/ComputationalHeatTransfer.jl)
 
@@ -9,7 +9,7 @@ tools for numerical simulation of conductive and convective heat transfer
 
 ## About the package
 
-The purpose of this package is to enable easy setup and solution of steady and transient heat conduction and convection problems in arbitrary geometries.
+The purpose of this package is to enable easy setup and solution of steady and transient heat conduction and convection problems in arbitrary geometries.  Documentation can be found at https://JuliaIBPM.github.io/ComputationalHeatTransfer.jl/latest.
 
 **ComputationalHeatTransfer.jl** is registered in the general Julia registry. To install, type
 e.g.,
