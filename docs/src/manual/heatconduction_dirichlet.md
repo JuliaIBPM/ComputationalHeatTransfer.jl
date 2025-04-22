@@ -5,7 +5,7 @@ EditURL = "../../../test/literate/heatconduction_dirichlet.jl"
 # Setting up a time-varying PDE
 
 ```@meta
-CurrentModule = ImmersedLayers
+CurrentModule = ComputationalHeatTransfer
 ```
 
 In this example we will demonstrate the use of the package on a time-dependent

@@ -52,8 +52,8 @@ using ComputationalHeatTransfer
 #=
 ## Solve the problem
 We will solve heat conduction inside a square region with thermal diffusivity equal to 1.
-We will apply heating through the boundary and also introduce two different
-types of area heating regions in the interior.
+We will apply heating through the vertical boundaries, adiabatic conditions on the horizontal
+boundaries, and also introduce two different types of area heating regions in the interior.
 =#
 
 #=
@@ -135,7 +135,7 @@ forcing_dict = Dict("heating models" => AbstractForcingModel[afm1,afm2])
 #=
 The heat flux boundary functions on the exterior and interior are
 defined here and assembled into a dict. Note that we are using the $x$
-component of the normal for the interior boundary heat flux. This sets
+component of the normal for the interior boundary heat flux on vertical boundaries. This sets
 non-zero heat fluxes through the vertical boundaries (inward on the left,
 outward on the right), and adiabatic conditions on the top and bottom.
 =#
@@ -148,7 +148,7 @@ end
 function get_qbminus(t,x,base_cache,phys_params,motions)
     nrm = normals(base_cache)
     qbminus = zeros_surface(base_cache)
-    qbminus .= nrm.u
+    qbminus .= nrm.u # qn = x
     return qbminus
 end
 
@@ -220,7 +220,7 @@ of the temperature field that we can access like a spatial field, e.g. $T(x,y)$.
 Tfcn = interpolatable_field(temperature(integrator),sys);
 
 #=
-First, a vertical slice along $x=0$, to verify that the adiabatic conditions
+First, a vertical slice along $x=0$, to verify that the non-adiabatic conditions
 are met there.
 =#
 #!jl y = -2:0.01:2
