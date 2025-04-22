@@ -1,7 +1,7 @@
 name = "ComputationalHeatTransfer"
 uuid = "5fc296c8-2eb5-40dc-a46d-98a68011a900"
 authors = ["Jeff Eldredge <jdeldre@g.ucla.edu>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
