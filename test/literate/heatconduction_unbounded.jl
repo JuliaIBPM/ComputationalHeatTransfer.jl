@@ -1,7 +1,7 @@
 # # A time-varying PDE with forcing
 
 #md # ```@meta
-#md # CurrentModule = ImmersedLayers
+#md # CurrentModule = ComputationalHeatTransfer
 #md # ```
 
 #=

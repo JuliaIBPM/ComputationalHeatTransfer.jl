@@ -5,7 +5,7 @@ EditURL = "../../../test/literate/heatconduction_unbounded.jl"
 # A time-varying PDE with forcing
 
 ```@meta
-CurrentModule = ImmersedLayers
+CurrentModule = ComputationalHeatTransfer
 ```
 
 In a previous example of the Poisson equation we demonstrated the use of point forcing. In this example
